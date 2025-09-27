@@ -332,14 +332,23 @@ def predict_all():
 def get_models():
     return jsonify(predictor.get_model_info())
 
+@app.route("/health", methods=["GET"])
+def health():
+    info = predictor.get_model_info()
+    return jsonify({
+        "status": "ok",
+        "available_models": info.get("available_models", [])
+    })
+
 if __name__ == "__main__":
     print("\n🚀 Starting Advanced Fake News Detection API...")
     print("Available endpoints:")
     print("  GET  / - Homepage with documentation")
+    print("  GET  /health - Health check")
     print("  POST /predict?model=svm - SVM prediction")
     print("  POST /predict?model=lstm - LSTM prediction")
     print("  POST /predict?model=bert - BERT prediction")
     print("  POST /predict-all - All models prediction")
     print("  GET  /models - Model information")
     print("\nStarting server on http://localhost:5000")
-    app.run(debug=True)
+    app.run(debug=False, use_reloader=False)
