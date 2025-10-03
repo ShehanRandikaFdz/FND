@@ -397,6 +397,7 @@ class VerdictAgent:
         # Convert ModelResult objects to dict for JSON serialization
         model_results_dict = {
             name: {
+                "model_name": result.model_name,
                 "label": result.label,
                 "confidence": result.confidence,
                 "model_type": result.model_type,
