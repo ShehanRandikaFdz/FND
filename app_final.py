@@ -7,15 +7,16 @@ from flask import Flask, request, jsonify
 import joblib
 import os
 import pickle
-import tensorflow as tf
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from transformers import AutoTokenizer, AutoModel
-import torch
-from sklearn.linear_model import LogisticRegression
-import numpy as np
 import re
 import warnings
+
+# Defer heavy ML imports to runtime to avoid environment segfaults
+tf = None
+pad_sequences = None
+torch = None
+AutoTokenizer = None
+AutoModel = None
+np = None
 warnings.filterwarnings('ignore')
 
 # Load models
@@ -43,30 +44,8 @@ class ModelPredictor:
         except Exception as e:
             print(f"❌ Error loading SVM model: {e}")
         
-        # Load LSTM
-        try:
-            self.models['lstm'] = {
-                'model': tf.keras.models.load_model('models/lstm_fake_news_model.h5'),
-                'tokenizer': pickle.load(open('models/lstm_tokenizer.pkl', 'rb')),
-                'accuracy': 0.9890,
-                'type': 'Deep Learning (LSTM)'
-            }
-            print("✅ LSTM model loaded")
-        except Exception as e:
-            print(f"❌ Error loading LSTM model: {e}")
-        
-        # Load BERT
-        try:
-            self.models['bert'] = {
-                'classifier': pickle.load(open('models/bert_fake_news_model/classifier.pkl', 'rb')),
-                'tokenizer': AutoTokenizer.from_pretrained('models/bert_fake_news_model'),
-                'model': AutoModel.from_pretrained('distilbert-base-uncased'),
-                'accuracy': 0.9750,
-                'type': 'Transformer (BERT)'
-            }
-            print("✅ BERT model loaded")
-        except Exception as e:
-            print(f"❌ Error loading BERT model: {e}")
+        # Defer loading LSTM/BERT to first use to avoid startup crashes
+        print("ℹ️ LSTM and BERT will be loaded lazily on first use")
     
     def wordopt(self, text):
         """Text preprocessing function"""
@@ -92,8 +71,24 @@ class ModelPredictor:
     
     def predict_lstm(self, text):
         """Predict using LSTM model"""
+        global tf, pad_sequences
         if 'lstm' not in self.models:
-            return {"error": "LSTM model not available"}
+            try:
+                if tf is None:
+                    import tensorflow as tf  # type: ignore
+                if pad_sequences is None:
+                    from tensorflow.keras.preprocessing.sequence import pad_sequences  # type: ignore
+                lstm_model = tf.keras.models.load_model('models/lstm_fake_news_model.h5')
+                lstm_tokenizer = pickle.load(open('models/lstm_tokenizer.pkl', 'rb'))
+                self.models['lstm'] = {
+                    'model': lstm_model,
+                    'tokenizer': lstm_tokenizer,
+                    'accuracy': 0.9890,
+                    'type': 'Deep Learning (LSTM)'
+                }
+                print("✅ LSTM model loaded (lazy)")
+            except Exception as e:
+                return {"error": f"LSTM model not available: {e}"}
         
         cleaned = self.wordopt(text)
         sequence = self.models['lstm']['tokenizer'].texts_to_sequences([cleaned])
@@ -108,7 +103,7 @@ class ModelPredictor:
         if 'bert' not in self.models:
             return None
         
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device('cuda' if torch and torch.cuda.is_available() else 'cpu')
         model = self.models['bert']['model']
         tokenizer = self.models['bert']['tokenizer']
         model.to(device)
@@ -139,8 +134,30 @@ class ModelPredictor:
     
     def predict_bert(self, text):
         """Predict using BERT model"""
+        global AutoTokenizer, AutoModel, torch, np
         if 'bert' not in self.models:
-            return {"error": "BERT model not available"}
+            try:
+                if AutoTokenizer is None or AutoModel is None:
+                    from transformers import AutoTokenizer as _AT, AutoModel as _AM  # type: ignore
+                    AutoTokenizer = _AT
+                    AutoModel = _AM
+                if torch is None:
+                    import torch  # type: ignore
+                if np is None:
+                    import numpy as np  # type: ignore
+                bert_classifier = pickle.load(open('models/bert_fake_news_model/classifier.pkl', 'rb'))
+                bert_tokenizer = AutoTokenizer.from_pretrained('models/bert_fake_news_model')
+                bert_model = AutoModel.from_pretrained('distilbert-base-uncased')
+                self.models['bert'] = {
+                    'classifier': bert_classifier,
+                    'tokenizer': bert_tokenizer,
+                    'model': bert_model,
+                    'accuracy': 0.9750,
+                    'type': 'Transformer (BERT)'
+                }
+                print("✅ BERT model loaded (lazy)")
+            except Exception as e:
+                return {"error": f"BERT model not available: {e}"}
         
         cleaned = self.wordopt(text)
         features = self.extract_bert_features([cleaned])
@@ -194,6 +211,15 @@ predictor = ModelPredictor()
 
 # Flask app
 app = Flask(__name__)
+
+# Verdict Agent integration
+try:
+    from verdict_agent import VerdictAgent, ModelResult
+    verdict_agent = VerdictAgent()
+    print("✅ Verdict Agent initialized")
+except Exception as e:
+    verdict_agent = None
+    print(f"❌ Verdict Agent unavailable: {e}")
 
 # Homepage route
 @app.route("/", methods=["GET"])
@@ -340,6 +366,109 @@ def health():
         "available_models": info.get("available_models", [])
     })
 
+# Combined analysis endpoint using Verdict Agent
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    data = request.json
+    text = data.get("text", "").strip()
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    
+    model_results = predictor.predict_all(text)
+    if not model_results:
+        return jsonify({"error": "No models available"}), 500
+    
+    if verdict_agent is None:
+        return jsonify({
+            "text": text,
+            "model_results": model_results,
+            "verdict": {"error": "Verdict Agent unavailable"}
+        })
+    
+    # Convert to ModelResult objects
+    va_input = {}
+    for name, res in model_results.items():
+        if "error" not in res:
+            key = name.lower()
+            model_meta = predictor.models.get(key, {})
+            va_input[key] = ModelResult(
+                model_name=name,
+                label=res.get("label", ""),
+                confidence=float(res.get("confidence", 0.0)),
+                model_type=model_meta.get("type", "Unknown"),
+                accuracy=float(model_meta.get("accuracy", 0.0))
+            )
+    response = verdict_agent.process_verdict(text, va_input)
+    return jsonify({
+        "text": text,
+        "model_results": model_results,
+        "verdict": {
+            "verdict": response.verdict.value,
+            "confidence": response.confidence,
+            "confidence_level": response.confidence_level.value,
+            "reasoning": response.reasoning,
+            "evidence": [
+                {
+                    "source": ev.source,
+                    "content": ev.content,
+                    "relevance_score": ev.relevance_score,
+                    "citation": ev.citation
+                } for ev in response.evidence
+            ],
+            "model_agreement": response.model_agreement,
+            "audit_id": response.audit_id,
+            "timestamp": response.timestamp,
+            "processing_time_ms": response.processing_time_ms,
+            "explainability": response.explainability
+        }
+    })
+
+# Verdict-only endpoint (accept model results from other agents)
+@app.route("/verdict", methods=["POST"])
+def verdict_only():
+    if verdict_agent is None:
+        return jsonify({"error": "Verdict Agent unavailable"}), 500
+    data = request.json
+    text = data.get("text", "").strip()
+    provided = data.get("model_results", {})
+    if not text:
+        return jsonify({"error": "Text is required"}), 400
+    if not provided:
+        return jsonify({"error": "Model results are required"}), 400
+    
+    va_input = {}
+    for name, res in provided.items():
+        try:
+            va_input[name.lower()] = ModelResult(
+                model_name=name,
+                label=res.get("label", ""),
+                confidence=float(res.get("confidence", 0.0)),
+                model_type=res.get("model_type", "Unknown"),
+                accuracy=float(res.get("accuracy", 0.0))
+            )
+        except Exception as e:
+            return jsonify({"error": f"Invalid model result for {name}: {e}"}), 400
+    response = verdict_agent.process_verdict(text, va_input)
+    return jsonify({
+        "verdict": response.verdict.value,
+        "confidence": response.confidence,
+        "confidence_level": response.confidence_level.value,
+        "reasoning": response.reasoning,
+        "evidence": [
+            {
+                "source": ev.source,
+                "content": ev.content,
+                "relevance_score": ev.relevance_score,
+                "citation": ev.citation
+            } for ev in response.evidence
+        ],
+        "model_agreement": response.model_agreement,
+        "audit_id": response.audit_id,
+        "timestamp": response.timestamp,
+        "processing_time_ms": response.processing_time_ms,
+        "explainability": response.explainability
+    })
+
 if __name__ == "__main__":
     print("\n🚀 Starting Advanced Fake News Detection API...")
     print("Available endpoints:")
@@ -351,4 +480,4 @@ if __name__ == "__main__":
     print("  POST /predict-all - All models prediction")
     print("  GET  /models - Model information")
     print("\nStarting server on http://localhost:5000")
-    app.run(debug=False, use_reloader=False)
+    app.run(debug=False, use_reloader=False, host='127.0.0.1', port=5000)
