@@ -1,188 +1,26 @@
 """
-Enhanced Fake News Detection API with Modern Interactive UI
-Complete web interface with article collector, verdict agent, and insights.
+Final Enhanced Fake News Detection API with SVM, LSTM, and BERT Models
+Complete implementation with all neural network diversity.
 """
 
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify
 import joblib
 import os
 import pickle
-import tensorflow as tf
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from transformers import AutoTokenizer, AutoModel
-import torch
-from sklearn.linear_model import LogisticRegression
-import numpy as np
 import re
 import warnings
-import datetime
-from collections import defaultdict
-import json
-import unicodedata
-import html
-import urllib.parse
-import time
-import logging
-from sklearn.calibration import CalibratedClassifierCV
-from sklearn.isotonic import IsotonicRegression
-import math
-import psutil
-import threading
-from collections import deque
-import statistics
+
+# Defer heavy ML imports to runtime to avoid environment segfaults
+tf = None
+pad_sequences = None
+torch = None
+AutoTokenizer = None
+AutoModel = None
+np = None
 warnings.filterwarnings('ignore')
 
 # Load models
 print("Loading all models...")
-
-# Phase 1 Integration: Enhanced Utilities
-class TextPreprocessor:
-    """Enhanced text preprocessing with normalization and cleaning."""
-    
-    def __init__(self):
-        self.min_chars = 10
-        self.min_words = 3
-    
-    def preprocess(self, text):
-        """Comprehensive text preprocessing."""
-        if not text or not isinstance(text, str):
-            return "", [], ["Empty or invalid input"]
-        
-        original_text = text
-        errors = []
-        
-        try:
-            # Unicode normalization
-            text = unicodedata.normalize('NFKC', text)
-            
-            # HTML decoding
-            text = html.unescape(text)
-            
-            # Basic cleaning
-            text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.IGNORECASE | re.DOTALL)
-            text = re.sub(r'<[^>]+>', '', text)
-            
-            # URL replacement
-            text = re.sub(r'https?://\S+|www\.\S+', '[URL]', text)
-            
-            # Whitespace normalization
-            text = re.sub(r'\s+', ' ', text).strip()
-            
-            # Character validation
-            if len(text) < self.min_chars:
-                errors.append(f"Text too short (minimum {self.min_chars} characters)")
-            
-            word_count = len(text.split())
-            if word_count < self.min_words:
-                errors.append(f"Too few words (minimum {self.min_words} words)")
-            
-            return text, [], errors
-            
-        except Exception as e:
-            return original_text, [], [f"Preprocessing error: {str(e)}"]
-
-class InputValidator:
-    """Input validation for security and content quality."""
-    
-    def __init__(self):
-        self.max_length = 10000
-        self.max_words = 2000
-    
-    def validate(self, text):
-        """Validate input text."""
-        if not text or not isinstance(text, str):
-            return False, "Invalid input"
-        
-        # Length validation
-        if len(text) > self.max_length:
-            return False, f"Text too long (maximum {self.max_length} characters)"
-        
-        word_count = len(text.split())
-        if word_count > self.max_words:
-            return False, f"Too many words (maximum {self.max_words} words)"
-        
-        # Security checks
-        if '<script' in text.lower():
-            return False, "Potential security risk detected"
-        
-        if len(re.findall(r'https?://', text)) > 10:
-            return False, "Too many URLs detected"
-        
-        return True, "Valid input"
-
-class ExplainabilityEngine:
-    """Enhanced explainability with detailed reasoning."""
-    
-    def __init__(self):
-        self.fake_patterns = [
-            'breaking', 'urgent', 'shocking', 'unbelievable', 'incredible',
-            'you won\'t believe', 'doctors hate', 'one weird trick', 'click here',
-            'must see', 'must read', 'what happens next', 'this will shock you'
-        ]
-        
-        self.real_patterns = [
-            'reuters', 'ap', 'associated press', 'bbc', 'cnn', 'nbc', 'abc', 'cbs',
-            'according to', 'study shows', 'research indicates', 'expert says',
-            'published in', 'peer-reviewed', 'journal', 'university'
-        ]
-    
-    def analyze_text(self, text, prediction, confidence, model_results):
-        """Generate detailed explanation."""
-        text_lower = text.lower()
-        
-        # Extract indicators
-        fake_indicators = []
-        real_indicators = []
-        
-        for pattern in self.fake_patterns:
-            if pattern in text_lower:
-                fake_indicators.append(pattern)
-        
-        for pattern in self.real_patterns:
-            if pattern in text_lower:
-                real_indicators.append(pattern)
-        
-        # Generate insight
-        if prediction == 'Real':
-            if real_indicators:
-                insight = f"This article appears credible because it contains reliable indicators like '{', '.join(real_indicators[:3])}'."
-            else:
-                insight = f"This article is classified as real with {confidence:.1%} confidence, showing characteristics of legitimate news reporting."
-        else:
-            if fake_indicators:
-                insight = f"This article is likely fake because it contains suspicious indicators like '{', '.join(fake_indicators[:3])}'."
-            else:
-                insight = f"This article is classified as fake with {confidence:.1%} confidence, likely due to sensational language or lack of credible sources."
-        
-        # Model agreement analysis
-        if model_results:
-            labels = [r.get('prediction', 'Unknown') for r in model_results.values() if r]
-            unique_labels = set(labels)
-            agreement = f"All {len(labels)} models agree" if len(unique_labels) == 1 else f"Models disagree ({len(unique_labels)} different predictions)"
-        else:
-            agreement = "Single model prediction"
-        
-        return {
-            'fake_indicators': fake_indicators[:8],
-            'real_indicators': real_indicators[:8],
-            'ai_insight': insight,
-            'model_agreement': agreement,
-            'confidence_level': self._get_confidence_level(confidence)
-        }
-    
-    def _get_confidence_level(self, confidence):
-        """Convert confidence to human-readable level."""
-        if confidence >= 0.9:
-            return "Very High"
-        elif confidence >= 0.8:
-            return "High"
-        elif confidence >= 0.6:
-            return "Moderate"
-        elif confidence >= 0.4:
-            return "Low"
-        else:
-            return "Very Low"
 
 class ModelPredictor:
     """Unified predictor for all models"""
@@ -190,12 +28,6 @@ class ModelPredictor:
     def __init__(self):
         self.models = {}
         self.load_models()
-        self.analysis_history = []
-        
-        # Phase 1 Integration: Initialize utilities
-        self.preprocessor = TextPreprocessor()
-        self.validator = InputValidator()
-        self.explainer = ExplainabilityEngine()
     
     def load_models(self):
         """Load all available models"""
@@ -212,188 +44,167 @@ class ModelPredictor:
         except Exception as e:
             print(f"❌ Error loading SVM model: {e}")
         
-        # Load LSTM
-        try:
-            self.models['lstm'] = {
-                'model': tf.keras.models.load_model('models/lstm_fake_news_model.h5'),
-                'tokenizer': pickle.load(open('models/lstm_tokenizer.pkl', 'rb')),
-                'accuracy': 0.9890,
-                'type': 'Neural Network'
-            }
-            print("✅ LSTM model loaded")
-        except Exception as e:
-            print(f"❌ Error loading LSTM model: {e}")
-        
-        # Load BERT
-        try:
-            self.models['bert'] = {
-                'model': joblib.load('models/bert_fake_news_model/classifier.pkl'),
-                'tokenizer': AutoTokenizer.from_pretrained('distilbert-base-uncased'),
-                'bert_model': AutoModel.from_pretrained('distilbert-base-uncased'),
-                'accuracy': 0.9750,
-                'type': 'Transformer'
-            }
-            print("✅ BERT model loaded")
-        except Exception as e:
-            print(f"❌ Error loading BERT model: {e}")
+        # Defer loading LSTM/BERT to first use to avoid startup crashes
+        print("ℹ️ LSTM and BERT will be loaded lazily on first use")
     
-    def preprocess_text(self, text):
-        """Enhanced text preprocessing"""
-        text = str(text).lower()
+    def wordopt(self, text):
+        """Text preprocessing function"""
+        text = str(text).lower().strip()
         text = re.sub(r'\[.*?\]', '', text)
         text = re.sub(r'https?://\S+|www\.\S+', '', text)
-        text = re.sub(r'<.*?>', '', text)
-        text = re.sub(r'[^a-zA-Z\s]', '', text)
+        text = re.sub(r'<.*?>+', '', text)
+        text = re.sub(r'\n', ' ', text)
         text = re.sub(r'\s+', ' ', text).strip()
         return text
     
     def predict_svm(self, text):
-        """SVM prediction with feature analysis"""
-        try:
-            cleaned_text = self.preprocess_text(text)
-            text_vector = self.models['svm']['vectorizer'].transform([cleaned_text])
-            
-            # Get prediction and probability
-            prediction = self.models['svm']['model'].predict(text_vector)[0]
-            probabilities = self.models['svm']['model'].predict_proba(text_vector)[0]
-            confidence = max(probabilities)
-            
-            return {
-                'prediction': 'Real' if prediction == 1 else 'Fake',
-                'confidence': confidence,
-                'model': 'SVM'
-            }
-        except Exception as e:
-            print(f"SVM prediction error: {e}")
-            return None
+        """Predict using SVM model"""
+        if 'svm' not in self.models:
+            return {"error": "SVM model not available"}
+        
+        cleaned = self.wordopt(text)
+        vect = self.models['svm']['vectorizer'].transform([cleaned])
+        pred = self.models['svm']['model'].predict(vect)[0]
+        conf = self.models['svm']['model'].predict_proba(vect)[0].max()
+        label = "Real" if pred == 1 else "Fake"
+        return {"label": label, "confidence": round(float(conf), 4)}
     
     def predict_lstm(self, text):
-        """LSTM prediction"""
-        try:
-            cleaned_text = self.preprocess_text(text)
-            tokenizer = self.models['lstm']['tokenizer']
-            
-            # Tokenize and pad
-            sequence = tokenizer.texts_to_sequences([cleaned_text])
-            padded_sequence = pad_sequences(sequence, maxlen=1000, padding='post')
-            
-            # Predict
-            prediction = self.models['lstm']['model'].predict(padded_sequence, verbose=0)[0]
-            confidence = float(prediction[0])
-            
-            return {
-                'prediction': 'Real' if confidence > 0.5 else 'Fake',
-                'confidence': confidence if confidence > 0.5 else 1 - confidence,
-                'model': 'LSTM'
-            }
-        except Exception as e:
-            print(f"LSTM prediction error: {e}")
+        """Predict using LSTM model"""
+        global tf, pad_sequences
+        if 'lstm' not in self.models:
+            try:
+                if tf is None:
+                    import tensorflow as tf  # type: ignore
+                if pad_sequences is None:
+                    from tensorflow.keras.preprocessing.sequence import pad_sequences  # type: ignore
+                lstm_model = tf.keras.models.load_model('models/lstm_fake_news_model.h5')
+                lstm_tokenizer = pickle.load(open('models/lstm_tokenizer.pkl', 'rb'))
+                self.models['lstm'] = {
+                    'model': lstm_model,
+                    'tokenizer': lstm_tokenizer,
+                    'accuracy': 0.9890,
+                    'type': 'Deep Learning (LSTM)'
+                }
+                print("✅ LSTM model loaded (lazy)")
+            except Exception as e:
+                return {"error": f"LSTM model not available: {e}"}
+        
+        cleaned = self.wordopt(text)
+        sequence = self.models['lstm']['tokenizer'].texts_to_sequences([cleaned])
+        padded_sequence = pad_sequences(sequence, maxlen=200, padding='post')
+        prediction = self.models['lstm']['model'].predict(padded_sequence, verbose=0)[0][0]
+        label = "Real" if prediction > 0.5 else "Fake"
+        confidence = max(prediction, 1 - prediction)
+        return {"label": label, "confidence": round(float(confidence), 4)}
+    
+    def extract_bert_features(self, texts, batch_size=16):
+        """Extract BERT features from texts"""
+        if 'bert' not in self.models:
             return None
+        
+        device = torch.device('cuda' if torch and torch.cuda.is_available() else 'cpu')
+        model = self.models['bert']['model']
+        tokenizer = self.models['bert']['tokenizer']
+        model.to(device)
+        model.eval()
+        
+        features = []
+        
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i+batch_size]
+            
+            encodings = tokenizer(
+                batch_texts,
+                truncation=True,
+                padding=True,
+                max_length=256,
+                return_tensors='pt'
+            )
+            
+            input_ids = encodings['input_ids'].to(device)
+            attention_mask = encodings['attention_mask'].to(device)
+            
+            with torch.no_grad():
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+                batch_features = outputs.last_hidden_state.mean(dim=1).cpu().numpy()
+                features.extend(batch_features)
+        
+        return np.array(features)
     
     def predict_bert(self, text):
-        """BERT prediction"""
-        try:
-            cleaned_text = self.preprocess_text(text)
-            tokenizer = self.models['bert']['tokenizer']
-            
-            # Tokenize
-            inputs = tokenizer(cleaned_text, return_tensors='pt', truncation=True, padding=True, max_length=512)
-            
-            # Get BERT embeddings
-            with torch.no_grad():
-                outputs = self.models['bert']['bert_model'](**inputs)
-                embeddings = outputs.last_hidden_state.mean(dim=1)
-            
-            # Predict with classifier
-            prediction = self.models['bert']['model'].predict_proba(embeddings.numpy())[0]
-            confidence = max(prediction)
-            predicted_class = np.argmax(prediction)
-            
-            return {
-                'prediction': 'Real' if predicted_class == 1 else 'Fake',
-                'confidence': confidence,
-                'model': 'BERT'
-            }
-        except Exception as e:
-            print(f"BERT prediction error: {e}")
-            return None
+        """Predict using BERT model"""
+        global AutoTokenizer, AutoModel, torch, np
+        if 'bert' not in self.models:
+            try:
+                if AutoTokenizer is None or AutoModel is None:
+                    from transformers import AutoTokenizer as _AT, AutoModel as _AM  # type: ignore
+                    AutoTokenizer = _AT
+                    AutoModel = _AM
+                if torch is None:
+                    import torch  # type: ignore
+                if np is None:
+                    import numpy as np  # type: ignore
+                bert_classifier = pickle.load(open('models/bert_fake_news_model/classifier.pkl', 'rb'))
+                bert_tokenizer = AutoTokenizer.from_pretrained('models/bert_fake_news_model')
+                bert_model = AutoModel.from_pretrained('distilbert-base-uncased')
+                self.models['bert'] = {
+                    'classifier': bert_classifier,
+                    'tokenizer': bert_tokenizer,
+                    'model': bert_model,
+                    'accuracy': 0.9750,
+                    'type': 'Transformer (BERT)'
+                }
+                print("✅ BERT model loaded (lazy)")
+            except Exception as e:
+                return {"error": f"BERT model not available: {e}"}
+        
+        cleaned = self.wordopt(text)
+        features = self.extract_bert_features([cleaned])
+        
+        prediction_proba = self.models['bert']['classifier'].predict_proba(features)[0]
+        predicted_class = self.models['bert']['classifier'].predict(features)[0]
+        confidence = prediction_proba.max()
+        
+        label = "Real" if predicted_class == 1 else "Fake"
+        return {"label": label, "confidence": round(float(confidence), 4)}
     
-    def analyze_credibility(self, text):
-        """Comprehensive credibility analysis with Phase 1 & 2 enhancements"""
-        
-        # Phase 1: Input validation
-        is_valid, validation_message = self.validator.validate(text)
-        if not is_valid:
-            return {'error': f'Input validation failed: {validation_message}'}
-        
-        # Phase 1: Enhanced preprocessing
-        processed_text, features, preprocessing_errors = self.preprocessor.preprocess(text)
-        if preprocessing_errors:
-            return {'error': f'Preprocessing failed: {", ".join(preprocessing_errors)}'}
-        
+    def predict_all(self, text):
+        """Predict using all available models"""
         results = {}
         
-        # Get predictions from all models (using processed text)
         if 'svm' in self.models:
-            results['svm'] = self.predict_svm(processed_text)
+            results['SVM'] = self.predict_svm(text)
+        
         if 'lstm' in self.models:
-            results['lstm'] = self.predict_lstm(processed_text)
+            results['LSTM'] = self.predict_lstm(text)
+        
         if 'bert' in self.models:
-            results['bert'] = self.predict_bert(processed_text)
+            results['BERT'] = self.predict_bert(text)
         
-        # Calculate ensemble prediction
-        valid_results = [r for r in results.values() if r is not None]
-        if not valid_results:
-            return {'error': 'All models failed to predict'}
-        
-        # Weighted ensemble (based on model accuracy)
-        weights = {'svm': 0.34, 'lstm': 0.33, 'bert': 0.33}
-        weighted_sum = 0
-        total_weight = 0
-        
-        for result in valid_results:
-            model_name = result['model'].lower()
-            weight = weights.get(model_name, 0.33)
-            prediction_score = 1 if result['prediction'] == 'Real' else 0
-            weighted_sum += prediction_score * weight * result['confidence']
-            total_weight += weight * result['confidence']
-        
-        ensemble_confidence = weighted_sum / total_weight if total_weight > 0 else 0.5
-        ensemble_prediction = 'Real' if ensemble_confidence > 0.5 else 'Fake'
-        
-        # Phase 1: Enhanced explainability
-        explanation = self.explainer.analyze_text(text, ensemble_prediction, ensemble_confidence, results)
-        
-        primary_result = {
-            'prediction': ensemble_prediction,
-            'confidence': ensemble_confidence,
-            'model_results': results,
-            'fake_indicators': explanation['fake_indicators'],
-            'real_indicators': explanation['real_indicators'],
-            'ai_insight': explanation['ai_insight'],
-            'model_agreement': explanation['model_agreement'],
-            'confidence_level': explanation['confidence_level'],
-            'preprocessing_applied': processed_text != text,
-            'validation_status': 'valid'
+        return results
+    
+    def get_model_info(self):
+        """Get information about all models"""
+        info = {
+            "available_models": list(self.models.keys()),
+            "model_details": {}
         }
         
-        # Store in history
-        analysis_record = {
-            'text': text[:100] + '...' if len(text) > 100 else text,
-            'prediction': primary_result['prediction'],
-            'confidence': primary_result['confidence'],
-            'timestamp': datetime.datetime.now().isoformat(),
-            'model_results': results,
-            'validation_status': 'valid',
-            'preprocessing_applied': processed_text != text
+        descriptions = {
+            'svm': 'Linear Support Vector Machine with TF-IDF features',
+            'lstm': 'Long Short-Term Memory neural network for sequence modeling',
+            'bert': 'Bidirectional Encoder Representations from Transformers'
         }
-        self.analysis_history.append(analysis_record)
         
-        # Keep only last 50 analyses
-        if len(self.analysis_history) > 50:
-            self.analysis_history = self.analysis_history[-50:]
+        for name, model_data in self.models.items():
+            info["model_details"][name.upper()] = {
+                "type": model_data['type'],
+                "accuracy": f"{model_data['accuracy']:.2%}",
+                "description": descriptions.get(name, 'Unknown model')
+            }
         
-        return primary_result
+        return info
 
 # Initialize predictor
 predictor = ModelPredictor()
@@ -401,223 +212,272 @@ predictor = ModelPredictor()
 # Flask app
 app = Flask(__name__)
 
-# HTML Template (simplified for space)
-HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚨 Fake News Detector</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); min-height: 100vh; padding: 10px; }
-        .container { max-width: 100%; margin: 0; padding: 0 20px; }
-        .header { text-align: center; color: white; margin-bottom: 20px; }
-        .header h1 { font-size: 2rem; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 20px; width: 100%; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
-        .card:hover { transform: translateY(-3px); }
-        .input-section { grid-column: 1; }
-        .result-section { grid-column: 2; display: none; }
-        .result-section.show { display: block; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; font-size: 14px; }
-        .form-control { width: 100%; padding: 10px; border: 2px solid #e1e5e9; border-radius: 6px; font-size: 14px; transition: border-color 0.3s ease; }
-        .form-control:focus { outline: none; border-color: #ff6b6b; box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1); }
-        textarea.form-control { resize: vertical; min-height: 100px; }
-        .btn { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; border: none; padding: 12px 25px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; width: 100%; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .verdict-box { text-align: center; padding: 20px; border-radius: 12px; margin-bottom: 20px; position: relative; overflow: hidden; }
-        .verdict-box.real { background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); color: white; }
-        .verdict-box.fake { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: white; }
-        .verdict-icon { font-size: 2.5rem; margin-bottom: 10px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .verdict-text { font-size: 1.5rem; font-weight: bold; margin-bottom: 8px; }
-        .confidence-score { font-size: 1.2rem; opacity: 0.9; }
-        .indicators-section { margin-top: 15px; }
-        .indicators-title { font-size: 1rem; font-weight: 600; margin-bottom: 10px; color: #333; }
-        .indicators-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .indicator-tag { display: inline-block; padding: 4px 8px; margin: 3px; border-radius: 15px; font-size: 11px; font-weight: 500; }
-        .fake-tag { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        .real-tag { background: #e8f5e8; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .ai-insight { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #ff6b6b; margin-top: 15px; }
-        .loading { display: none; text-align: center; padding: 20px; }
-        .loading.show { display: block; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } .indicators-grid { grid-template-columns: 1fr; } }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🚨 Fake News Detector</h1>
-            <p>Advanced AI system to detect fake news instantly</p>
-        </div>
-        
-        <div class="main-grid">
-            <div class="card input-section">
-                <h2 style="margin-bottom: 15px; color: #333; font-size: 18px;">📝 Article Input</h2>
-                <form id="analysisForm">
-                    <div class="form-group">
-                        <label for="articleText">Paste your article here...</label>
-                        <textarea id="articleText" class="form-control" placeholder="Paste the article or headline to check its credibility..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn" id="analyzeBtn">🔍 Detect Fake News</button>
-                </form>
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>Analyzing article credibility...</p>
-                </div>
-            </div>
-            
-            <div class="card result-section" id="resultSection">
-                <h2 style="color: #333; margin-bottom: 15px; font-size: 18px;">🎯 Detection Result</h2>
-                <div class="verdict-box" id="verdictBox">
-                    <div class="verdict-icon" id="verdictIcon">⏳</div>
-                    <div class="verdict-text" id="verdictText">Analyzing...</div>
-                    <div class="confidence-score" id="confidenceScore">Confidence: --%</div>
-                </div>
-                <div class="indicators-section">
-                    <div class="indicators-grid">
-                        <div>
-                            <div class="indicators-title">🔴 Fake Indicators</div>
-                            <div id="fakeIndicators"></div>
-                        </div>
-                        <div>
-                            <div class="indicators-title">🟢 Real Indicators</div>
-                            <div id="realIndicators"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="ai-insight">
-                    <h4>🧠 AI Insight</h4>
-                    <p id="aiInsight">Analysis will appear here...</p>
-                </div>
-            </div>
-        </div>
-    </div>
+# Verdict Agent integration
+try:
+    from verdict_agent import VerdictAgent, ModelResult
+    verdict_agent = VerdictAgent()
+    print("✅ Verdict Agent initialized")
+except Exception as e:
+    verdict_agent = None
+    print(f"❌ Verdict Agent unavailable: {e}")
 
-    <script>
-        document.getElementById('analysisForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const articleText = document.getElementById('articleText').value.trim();
-            if (!articleText) { alert('Please enter some text to analyze.'); return; }
-            
-            document.getElementById('loading').classList.add('show');
-            document.getElementById('analyzeBtn').disabled = true;
-            
-            try {
-                const response = await fetch('/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: articleText })
-                });
-                const result = await response.json();
-                if (result.error) throw new Error(result.error);
-                displayResults(result);
-            } catch (error) {
-                alert('Error analyzing article: ' + error.message);
-            } finally {
-                document.getElementById('loading').classList.remove('show');
-                document.getElementById('analyzeBtn').disabled = false;
-            }
-        });
-
-        function displayResults(result) {
-            const resultSection = document.getElementById('resultSection');
-            resultSection.classList.add('show');
-            
-            const verdictBox = document.getElementById('verdictBox');
-            const verdictIcon = document.getElementById('verdictIcon');
-            const verdictText = document.getElementById('verdictText');
-            const confidenceScore = document.getElementById('confidenceScore');
-            
-            if (result.prediction === 'Real') {
-                verdictBox.className = 'verdict-box real';
-                verdictIcon.textContent = '✅';
-                verdictText.textContent = 'Real News';
-            } else {
-                verdictBox.className = 'verdict-box fake';
-                verdictIcon.textContent = '❌';
-                verdictText.textContent = 'Fake News';
-            }
-            
-            confidenceScore.textContent = `Confidence: ${(result.confidence * 100).toFixed(1)}%`;
-            
-            // Update indicators
-            const fakeContainer = document.getElementById('fakeIndicators');
-            const realContainer = document.getElementById('realIndicators');
-            fakeContainer.innerHTML = '';
-            realContainer.innerHTML = '';
-            
-            (result.fake_indicators || []).forEach(indicator => {
-                const tag = document.createElement('span');
-                tag.className = 'indicator-tag fake-tag';
-                tag.textContent = indicator;
-                fakeContainer.appendChild(tag);
-            });
-            
-            (result.real_indicators || []).forEach(indicator => {
-                const tag = document.createElement('span');
-                tag.className = 'indicator-tag real-tag';
-                tag.textContent = indicator;
-                realContainer.appendChild(tag);
-            });
-            
-            document.getElementById('aiInsight').textContent = result.ai_insight || 'No insight available.';
-        }
-    </script>
-</body>
-</html>
-"""
-
-@app.route('/')
+# Homepage route
+@app.route("/", methods=["GET"])
 def home():
-    """Serve the enhanced UI"""
-    return render_template_string(HTML_TEMPLATE)
+    model_info = predictor.get_model_info()
+    
+    return f"""
+    <html>
+    <head>
+        <title>Advanced Fake News Detection API</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }}
+            .container {{ max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+            h1 {{ color: #333; text-align: center; }}
+            .model-card {{ background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff; }}
+            .method {{ color: #28a745; font-weight: bold; }}
+            .url {{ color: #007bff; font-family: monospace; }}
+            .example {{ background: #e9ecef; padding: 10px; border-radius: 3px; margin: 10px 0; }}
+            .status {{ color: #28a745; font-weight: bold; }}
+            .accuracy {{ color: #dc3545; font-weight: bold; }}
+            .neural {{ color: #6f42c1; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Advanced Fake News Detection API</h1>
+            <p><span class="status">✅ System running with neural network diversity!</span></p>
+            
+            <h2>Available Models</h2>
+            <div class="model-card">
+                <h3>🧠 Linear SVM (Traditional ML)</h3>
+                <p><span class="accuracy">Accuracy: 99.59%</span></p>
+                <p>Fast, lightweight, excellent for real-time predictions</p>
+            </div>
+            
+            <div class="model-card">
+                <h3>🔗 LSTM Neural Network</h3>
+                <p><span class="accuracy">Accuracy: 98.90%</span></p>
+                <p><span class="neural">Deep learning model</span> that captures sequential patterns in text</p>
+            </div>
+            
+            <div class="model-card">
+                <h3>🤖 BERT Transformer</h3>
+                <p><span class="accuracy">Accuracy: 97.50%</span></p>
+                <p><span class="neural">State-of-the-art transformer</span> with contextual understanding</p>
+            </div>
+            
+            <h2>API Endpoints</h2>
+            
+            <div class="example">
+                <h3>Single Model Prediction</h3>
+                <span class="method">POST</span> <span class="url">/predict?model=svm</span><br>
+                <span class="method">POST</span> <span class="url">/predict?model=lstm</span><br>
+                <span class="method">POST</span> <span class="url">/predict?model=bert</span><br>
+                Body: <code>{{"text": "Your news article here"}}</code>
+            </div>
+            
+            <div class="example">
+                <h3>All Models Comparison</h3>
+                <span class="method">POST</span> <span class="url">/predict-all</span><br>
+                Body: <code>{{"text": "Your news article here"}}</code>
+            </div>
+            
+            <div class="example">
+                <h3>Model Information</h3>
+                <span class="method">GET</span> <span class="url">/models</span>
+            </div>
+            
+            <h3>Example Response (All Models)</h3>
+            <div class="example">
+                <code>
+                {{<br>
+                &nbsp;&nbsp;"SVM": {{"label": "Real", "confidence": 0.9957}},<br>
+                &nbsp;&nbsp;"LSTM": {{"label": "Real", "confidence": 0.9848}},<br>
+                &nbsp;&nbsp;"BERT": {{"label": "Real", "confidence": 0.9938}}<br>
+                }}
+                </code>
+            </div>
+            
+            <h3>Model Performance Comparison</h3>
+            <ul>
+                <li><strong>SVM:</strong> 99.59% accuracy, fastest inference, traditional ML</li>
+                <li><strong>LSTM:</strong> 98.90% accuracy, sequential pattern recognition, neural network</li>
+                <li><strong>BERT:</strong> 97.50% accuracy, contextual understanding, transformer</li>
+            </ul>
+            
+            <h3>Neural Network Diversity Achieved! 🎯</h3>
+            <p>This system now includes multiple neural network architectures for comprehensive fake news detection.</p>
+        </div>
+    </body>
+    </html>
+    """
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    """Analyze article credibility"""
-    try:
-        data = request.get_json()
-        text = data.get('text', '')
-        
-        if not text.strip():
-            return jsonify({'error': 'No text provided'}), 400
-        
-        # Perform analysis
-        result = predictor.analyze_credibility(text)
-        
-        return jsonify(result)
+# Single model prediction endpoint
+@app.route("/predict", methods=["POST"])
+def predict():
+    data = request.json
+    text = data.get("text", "")
+    model_type = request.args.get("model", "svm").lower()
+    
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    
+    if model_type == "svm":
+        result = predictor.predict_svm(text)
+    elif model_type == "lstm":
+        result = predictor.predict_lstm(text)
+    elif model_type == "bert":
+        result = predictor.predict_bert(text)
+    else:
+        return jsonify({"error": f"Unknown model: {model_type}. Available: svm, lstm, bert"}), 400
+    
+    if "error" in result:
+        return jsonify(result), 500
+    
+    return jsonify(result)
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+# All models prediction endpoint
+@app.route("/predict-all", methods=["POST"])
+def predict_all():
+    data = request.json
+    text = data.get("text", "")
+    
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    
+    results = predictor.predict_all(text)
+    
+    if not results:
+        return jsonify({"error": "No models available"}), 500
+    
+    return jsonify(results)
 
-@app.route('/history')
-def get_history():
-    """Get analysis history"""
-    return jsonify({'history': predictor.analysis_history})
+# Model information endpoint
+@app.route("/models", methods=["GET"])
+def get_models():
+    return jsonify(predictor.get_model_info())
 
-@app.route('/health')
+@app.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint"""
+    info = predictor.get_model_info()
     return jsonify({
-        'status': 'ok',
-        'available_models': list(predictor.models.keys()),
-        'total_analyses': len(predictor.analysis_history)
+        "status": "ok",
+        "available_models": info.get("available_models", [])
     })
 
-if __name__ == '__main__':
-    print("🚀 Starting Enhanced Credibility Analyzer with Modern UI...")
+# Combined analysis endpoint using Verdict Agent
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    data = request.json
+    text = data.get("text", "").strip()
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    
+    model_results = predictor.predict_all(text)
+    if not model_results:
+        return jsonify({"error": "No models available"}), 500
+    
+    if verdict_agent is None:
+        return jsonify({
+            "text": text,
+            "model_results": model_results,
+            "verdict": {"error": "Verdict Agent unavailable"}
+        })
+    
+    # Convert to ModelResult objects
+    va_input = {}
+    for name, res in model_results.items():
+        if "error" not in res:
+            key = name.lower()
+            model_meta = predictor.models.get(key, {})
+            va_input[key] = ModelResult(
+                model_name=name,
+                label=res.get("label", ""),
+                confidence=float(res.get("confidence", 0.0)),
+                model_type=model_meta.get("type", "Unknown"),
+                accuracy=float(model_meta.get("accuracy", 0.0))
+            )
+    response = verdict_agent.process_verdict(text, va_input)
+    return jsonify({
+        "text": text,
+        "model_results": model_results,
+        "verdict": {
+            "verdict": response.verdict.value,
+            "confidence": response.confidence,
+            "confidence_level": response.confidence_level.value,
+            "reasoning": response.reasoning,
+            "evidence": [
+                {
+                    "source": ev.source,
+                    "content": ev.content,
+                    "relevance_score": ev.relevance_score,
+                    "citation": ev.citation
+                } for ev in response.evidence
+            ],
+            "model_agreement": response.model_agreement,
+            "audit_id": response.audit_id,
+            "timestamp": response.timestamp,
+            "processing_time_ms": response.processing_time_ms,
+            "explainability": response.explainability
+        }
+    })
+
+# Verdict-only endpoint (accept model results from other agents)
+@app.route("/verdict", methods=["POST"])
+def verdict_only():
+    if verdict_agent is None:
+        return jsonify({"error": "Verdict Agent unavailable"}), 500
+    data = request.json
+    text = data.get("text", "").strip()
+    provided = data.get("model_results", {})
+    if not text:
+        return jsonify({"error": "Text is required"}), 400
+    if not provided:
+        return jsonify({"error": "Model results are required"}), 400
+    
+    va_input = {}
+    for name, res in provided.items():
+        try:
+            va_input[name.lower()] = ModelResult(
+                model_name=name,
+                label=res.get("label", ""),
+                confidence=float(res.get("confidence", 0.0)),
+                model_type=res.get("model_type", "Unknown"),
+                accuracy=float(res.get("accuracy", 0.0))
+            )
+        except Exception as e:
+            return jsonify({"error": f"Invalid model result for {name}: {e}"}), 400
+    response = verdict_agent.process_verdict(text, va_input)
+    return jsonify({
+        "verdict": response.verdict.value,
+        "confidence": response.confidence,
+        "confidence_level": response.confidence_level.value,
+        "reasoning": response.reasoning,
+        "evidence": [
+            {
+                "source": ev.source,
+                "content": ev.content,
+                "relevance_score": ev.relevance_score,
+                "citation": ev.citation
+            } for ev in response.evidence
+        ],
+        "model_agreement": response.model_agreement,
+        "audit_id": response.audit_id,
+        "timestamp": response.timestamp,
+        "processing_time_ms": response.processing_time_ms,
+        "explainability": response.explainability
+    })
+
+if __name__ == "__main__":
+    print("\n🚀 Starting Advanced Fake News Detection API...")
     print("Available endpoints:")
-    print("  GET  / - Enhanced UI")
-    print("  POST /analyze - Analyze article credibility")
-    print("  GET  /history - Get analysis history")
+    print("  GET  / - Homepage with documentation")
     print("  GET  /health - Health check")
-    print("Starting server on http://localhost:5000")
-    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=5000)
+    print("  POST /predict?model=svm - SVM prediction")
+    print("  POST /predict?model=lstm - LSTM prediction")
+    print("  POST /predict?model=bert - BERT prediction")
+    print("  POST /predict-all - All models prediction")
+    print("  GET  /models - Model information")
+    print("\nStarting server on http://localhost:5000")
+    app.run(debug=False, use_reloader=False, host='127.0.0.1', port=5000)
