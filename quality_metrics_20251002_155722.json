@@ -1,0 +1,1538 @@
+{
+  "export_timestamp": "2025-10-02T15:57:22.644535",
+  "performance_stats": {
+    "total_requests": 50,
+    "successful_requests": 47,
+    "failed_requests": 3,
+    "avg_response_time": 0.1956516832221838,
+    "avg_confidence": 0.7688191791592269,
+    "avg_credibility_score": 0.6194845508098124
+  },
+  "current_metrics": {
+    "response_time": 0.24766330539246328,
+    "confidence": 0.7879282899911144,
+    "credibility_score": 0.5625524409285578,
+    "fake_predictions": 1,
+    "real_predictions": 0,
+    "success_rate": 0.94,
+    "error_rate": 0.06000000000000005,
+    "throughput": 290.969326276761
+  },
+  "baseline_metrics": {
+    "response_time": {
+      "mean": 0.20585632307227253,
+      "std": 0.053621597434818764
+    },
+    "confidence": {
+      "mean": 0.8023260539707274,
+      "std": 0.09599096637482278
+    },
+    "credibility_score": {
+      "mean": 0.6158809562722525,
+      "std": 0.17880176667609907
+    },
+    "fake_predictions": {
+      "mean": 0.19148936170212766,
+      "std": 0.3934732342320624
+    },
+    "real_predictions": {
+      "mean": 0.8085106382978723,
+      "std": 0.3934732342320624
+    }
+  },
+  "alert_thresholds": {
+    "accuracy": 0.85,
+    "confidence": 0.7,
+    "response_time": 2.0,
+    "error_rate": 0.1,
+    "throughput": 1.0
+  },
+  "drift_thresholds": {
+    "accuracy_drift": 0.05,
+    "confidence_drift": 0.1,
+    "response_time_drift": 0.2,
+    "prediction_distribution_drift": 0.15
+  },
+  "metrics_history": {
+    "response_time": [
+      {
+        "value": 0.13445942515650494,
+        "timestamp": "2025-10-02T15:57:12.053585",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.28639464494734235,
+        "timestamp": "2025-10-02T15:57:12.064428",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.2724144377674104,
+        "timestamp": "2025-10-02T15:57:12.075013",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.280128475358721,
+        "timestamp": "2025-10-02T15:57:12.087508",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.2137263081564267,
+        "timestamp": "2025-10-02T15:57:12.098181",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.31921738611059497,
+        "timestamp": "2025-10-02T15:57:12.108897",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.23719814148104162,
+        "timestamp": "2025-10-02T15:57:12.119582",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.1720950224408204,
+        "timestamp": "2025-10-02T15:57:12.130865",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.16412018254317712,
+        "timestamp": "2025-10-02T15:57:12.141385",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.13119364429637925,
+        "timestamp": "2025-10-02T15:57:12.151909",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.24248574312647214,
+        "timestamp": "2025-10-02T15:57:12.162421",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.14185246795343426,
+        "timestamp": "2025-10-02T15:57:12.173033",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.2359159807529687,
+        "timestamp": "2025-10-02T15:57:12.183435",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.19984277553140345,
+        "timestamp": "2025-10-02T15:57:12.193799",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.21072571279175384,
+        "timestamp": "2025-10-02T15:57:12.204792",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.21222522407725583,
+        "timestamp": "2025-10-02T15:57:12.215560",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.23531892433118887,
+        "timestamp": "2025-10-02T15:57:12.226357",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.17585226506051893,
+        "timestamp": "2025-10-02T15:57:12.237253",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.25617432614712615,
+        "timestamp": "2025-10-02T15:57:12.248043",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.22584355624094396,
+        "timestamp": "2025-10-02T15:57:12.259046",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.23275544681727156,
+        "timestamp": "2025-10-02T15:57:12.273089",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.3155722478085621,
+        "timestamp": "2025-10-02T15:57:12.283554",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.18370703229059288,
+        "timestamp": "2025-10-02T15:57:12.294187",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.13958767673310762,
+        "timestamp": "2025-10-02T15:57:12.304656",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.22417877003616696,
+        "timestamp": "2025-10-02T15:57:12.315336",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.18698816195272067,
+        "timestamp": "2025-10-02T15:57:12.325847",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.22124928106857866,
+        "timestamp": "2025-10-02T15:57:12.338196",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.2087498300409763,
+        "timestamp": "2025-10-02T15:57:12.348967",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.19081129790393664,
+        "timestamp": "2025-10-02T15:57:12.359514",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.17339385675823937,
+        "timestamp": "2025-10-02T15:57:12.371961",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.20406024902713923,
+        "timestamp": "2025-10-02T15:57:12.382752",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.28448255910008874,
+        "timestamp": "2025-10-02T15:57:12.393595",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.2826232484003196,
+        "timestamp": "2025-10-02T15:57:12.404322",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.09527345447073064,
+        "timestamp": "2025-10-02T15:57:12.415035",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.1821718207340881,
+        "timestamp": "2025-10-02T15:57:12.425772",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.14072380380576988,
+        "timestamp": "2025-10-02T15:57:12.436296",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.17402911819618444,
+        "timestamp": "2025-10-02T15:57:12.447569",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.14406337573967967,
+        "timestamp": "2025-10-02T15:57:12.458513",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.12324447618559678,
+        "timestamp": "2025-10-02T15:57:12.469386",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.17589277320919305,
+        "timestamp": "2025-10-02T15:57:12.480078",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.19604661510407315,
+        "timestamp": "2025-10-02T15:57:12.490797",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.23027008044348596,
+        "timestamp": "2025-10-02T15:57:12.501577",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.1438404005870242,
+        "timestamp": "2025-10-02T15:57:12.512530",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.302138670091208,
+        "timestamp": "2025-10-02T15:57:12.523332",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.25992376291820146,
+        "timestamp": "2025-10-02T15:57:12.534565",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.16922982249943758,
+        "timestamp": "2025-10-02T15:57:12.545090",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.2071902415341149,
+        "timestamp": "2025-10-02T15:57:12.555831",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.18272605784198565,
+        "timestamp": "2025-10-02T15:57:12.566569",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.12304407265120863,
+        "timestamp": "2025-10-02T15:57:12.577257",
+        "threshold": 2.0,
+        "status": "normal"
+      },
+      {
+        "value": 0.24766330539246328,
+        "timestamp": "2025-10-02T15:57:12.588084",
+        "threshold": 2.0,
+        "status": "normal"
+      }
+    ],
+    "confidence": [
+      {
+        "value": 0.9584784156360064,
+        "timestamp": "2025-10-02T15:57:12.053585",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8810316188752816,
+        "timestamp": "2025-10-02T15:57:12.064428",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.9776632982131216,
+        "timestamp": "2025-10-02T15:57:12.075013",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8593099852457705,
+        "timestamp": "2025-10-02T15:57:12.087508",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7901486301707004,
+        "timestamp": "2025-10-02T15:57:12.098181",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8462729445150834,
+        "timestamp": "2025-10-02T15:57:12.108897",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8586247800162286,
+        "timestamp": "2025-10-02T15:57:12.119582",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8401314190251132,
+        "timestamp": "2025-10-02T15:57:12.130865",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7481558924655204,
+        "timestamp": "2025-10-02T15:57:12.141385",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7217486255267818,
+        "timestamp": "2025-10-02T15:57:12.151909",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7940980937349068,
+        "timestamp": "2025-10-02T15:57:12.173033",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8449131447207874,
+        "timestamp": "2025-10-02T15:57:12.183435",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.9094761386451264,
+        "timestamp": "2025-10-02T15:57:12.193799",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.937469902232813,
+        "timestamp": "2025-10-02T15:57:12.204792",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8888965414505131,
+        "timestamp": "2025-10-02T15:57:12.215560",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8579300212962686,
+        "timestamp": "2025-10-02T15:57:12.226357",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8709159144403289,
+        "timestamp": "2025-10-02T15:57:12.237253",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8936579286077164,
+        "timestamp": "2025-10-02T15:57:12.248043",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7951087269241542,
+        "timestamp": "2025-10-02T15:57:12.259046",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7638259541465742,
+        "timestamp": "2025-10-02T15:57:12.273089",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.639061074612944,
+        "timestamp": "2025-10-02T15:57:12.283554",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8831189799791302,
+        "timestamp": "2025-10-02T15:57:12.294187",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7529324005661602,
+        "timestamp": "2025-10-02T15:57:12.304656",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8379274278384518,
+        "timestamp": "2025-10-02T15:57:12.315336",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7510474867031709,
+        "timestamp": "2025-10-02T15:57:12.325847",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8877609589600013,
+        "timestamp": "2025-10-02T15:57:12.338196",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8789196390394118,
+        "timestamp": "2025-10-02T15:57:12.348967",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.6128596038819901,
+        "timestamp": "2025-10-02T15:57:12.359514",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8788983974846618,
+        "timestamp": "2025-10-02T15:57:12.371961",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.6564425374789625,
+        "timestamp": "2025-10-02T15:57:12.382752",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.6578252538683327,
+        "timestamp": "2025-10-02T15:57:12.393595",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7197230144387834,
+        "timestamp": "2025-10-02T15:57:12.404322",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7434740223923817,
+        "timestamp": "2025-10-02T15:57:12.415035",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.6082984241171276,
+        "timestamp": "2025-10-02T15:57:12.425772",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8203524373512775,
+        "timestamp": "2025-10-02T15:57:12.436296",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.9702149333340133,
+        "timestamp": "2025-10-02T15:57:12.447569",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.6842607488436441,
+        "timestamp": "2025-10-02T15:57:12.458513",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.6054499627497576,
+        "timestamp": "2025-10-02T15:57:12.469386",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.725967635996925,
+        "timestamp": "2025-10-02T15:57:12.480078",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.810190185806439,
+        "timestamp": "2025-10-02T15:57:12.501577",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8213939499948752,
+        "timestamp": "2025-10-02T15:57:12.523332",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7374872679266475,
+        "timestamp": "2025-10-02T15:57:12.534565",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8652399563996703,
+        "timestamp": "2025-10-02T15:57:12.545090",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.8662663293511014,
+        "timestamp": "2025-10-02T15:57:12.555831",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7646862705493604,
+        "timestamp": "2025-10-02T15:57:12.566569",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7037393710790616,
+        "timestamp": "2025-10-02T15:57:12.577257",
+        "threshold": 0.7,
+        "status": "normal"
+      },
+      {
+        "value": 0.7879282899911144,
+        "timestamp": "2025-10-02T15:57:12.588084",
+        "threshold": 0.7,
+        "status": "normal"
+      }
+    ],
+    "credibility_score": [
+      {
+        "value": 0.9723501029250918,
+        "timestamp": "2025-10-02T15:57:12.053585",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.627188751984637,
+        "timestamp": "2025-10-02T15:57:12.064428",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.3614547391350956,
+        "timestamp": "2025-10-02T15:57:12.075013",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.35440425957932536,
+        "timestamp": "2025-10-02T15:57:12.087508",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7249657997073141,
+        "timestamp": "2025-10-02T15:57:12.098181",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.504663752577745,
+        "timestamp": "2025-10-02T15:57:12.108897",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6330946501175255,
+        "timestamp": "2025-10-02T15:57:12.119582",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.8007580582502755,
+        "timestamp": "2025-10-02T15:57:12.130865",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7455055169355651,
+        "timestamp": "2025-10-02T15:57:12.141385",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.3942880873467809,
+        "timestamp": "2025-10-02T15:57:12.151909",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6803537747590895,
+        "timestamp": "2025-10-02T15:57:12.173033",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7135367373770098,
+        "timestamp": "2025-10-02T15:57:12.183435",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6324362874656098,
+        "timestamp": "2025-10-02T15:57:12.193799",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.5348974071483414,
+        "timestamp": "2025-10-02T15:57:12.204792",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6962940931383629,
+        "timestamp": "2025-10-02T15:57:12.215560",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7094680093570065,
+        "timestamp": "2025-10-02T15:57:12.226357",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.5926594832578079,
+        "timestamp": "2025-10-02T15:57:12.237253",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.575843835177204,
+        "timestamp": "2025-10-02T15:57:12.248043",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.372941922680701,
+        "timestamp": "2025-10-02T15:57:12.259046",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1.0,
+        "timestamp": "2025-10-02T15:57:12.273089",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.5653122105758396,
+        "timestamp": "2025-10-02T15:57:12.283554",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6818171363932876,
+        "timestamp": "2025-10-02T15:57:12.294187",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.582335620812825,
+        "timestamp": "2025-10-02T15:57:12.304656",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.34871153023985557,
+        "timestamp": "2025-10-02T15:57:12.315336",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.5986685646373021,
+        "timestamp": "2025-10-02T15:57:12.325847",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.24406615804181842,
+        "timestamp": "2025-10-02T15:57:12.338196",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7113900458601135,
+        "timestamp": "2025-10-02T15:57:12.348967",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.4460363651996705,
+        "timestamp": "2025-10-02T15:57:12.359514",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6911700911619917,
+        "timestamp": "2025-10-02T15:57:12.371961",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1.0,
+        "timestamp": "2025-10-02T15:57:12.382752",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.61484708439502,
+        "timestamp": "2025-10-02T15:57:12.393595",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1.0,
+        "timestamp": "2025-10-02T15:57:12.404322",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.39021326312715093,
+        "timestamp": "2025-10-02T15:57:12.415035",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.40188579933866564,
+        "timestamp": "2025-10-02T15:57:12.425772",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.5547937822076761,
+        "timestamp": "2025-10-02T15:57:12.436296",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.5623872702136918,
+        "timestamp": "2025-10-02T15:57:12.447569",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7697815655121856,
+        "timestamp": "2025-10-02T15:57:12.458513",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.44053499177803535,
+        "timestamp": "2025-10-02T15:57:12.469386",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.35247663137075025,
+        "timestamp": "2025-10-02T15:57:12.480078",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.548505932181487,
+        "timestamp": "2025-10-02T15:57:12.501577",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.8307522643088112,
+        "timestamp": "2025-10-02T15:57:12.523332",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7536552926510249,
+        "timestamp": "2025-10-02T15:57:12.534565",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.7213006494496139,
+        "timestamp": "2025-10-02T15:57:12.545090",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.634017673958924,
+        "timestamp": "2025-10-02T15:57:12.555831",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6889605451239371,
+        "timestamp": "2025-10-02T15:57:12.566569",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.6231267664071379,
+        "timestamp": "2025-10-02T15:57:12.577257",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0.5625524409285578,
+        "timestamp": "2025-10-02T15:57:12.588084",
+        "threshold": null,
+        "status": "normal"
+      }
+    ],
+    "fake_predictions": [
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.053585",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.064428",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.075013",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.087508",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.098181",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.108897",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.119582",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.130865",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.141385",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.151909",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.173033",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.183435",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.193799",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.204792",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.215560",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.226357",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.237253",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.248043",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.259046",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.273089",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.283554",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.294187",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.304656",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.315336",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.325847",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.338196",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.348967",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.359514",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.371961",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.382752",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.393595",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.404322",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.415035",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.425772",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.436296",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.447569",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.458513",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.469386",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.480078",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.501577",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.523332",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.534565",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.545090",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.555831",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.566569",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.577257",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.588084",
+        "threshold": null,
+        "status": "normal"
+      }
+    ],
+    "real_predictions": [
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.053585",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.064428",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.075013",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.087508",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.098181",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.108897",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.119582",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.130865",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.141385",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.151909",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.173033",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.183435",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.193799",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.204792",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.215560",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.226357",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.237253",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.248043",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.259046",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.273089",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.283554",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.294187",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.304656",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.315336",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.325847",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.338196",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.348967",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.359514",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.371961",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.382752",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.393595",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.404322",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.415035",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.425772",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.436296",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.447569",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.458513",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.469386",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.480078",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.501577",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.523332",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.534565",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.545090",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.555831",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.566569",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 1,
+        "timestamp": "2025-10-02T15:57:12.577257",
+        "threshold": null,
+        "status": "normal"
+      },
+      {
+        "value": 0,
+        "timestamp": "2025-10-02T15:57:12.588084",
+        "threshold": null,
+        "status": "normal"
+      }
+    ],
+    "success_rate": [
+      {
+        "value": 0.94,
+        "timestamp": "2025-10-02T15:57:12.600929",
+        "threshold": null,
+        "status": "normal"
+      }
+    ],
+    "error_rate": [
+      {
+        "value": 0.06000000000000005,
+        "timestamp": "2025-10-02T15:57:12.600929",
+        "threshold": 0.1,
+        "status": "normal"
+      }
+    ],
+    "throughput": [
+      {
+        "value": 290.969326276761,
+        "timestamp": "2025-10-02T15:57:12.600929",
+        "threshold": 1.0,
+        "status": "normal"
+      }
+    ]
+  },
+  "alerts": [
+    {
+      "level": "critical",
+      "message": "response_time below threshold: 0.248 < 2.000",
+      "metric_name": "response_time",
+      "value": 0.24766330539246328,
+      "threshold": 2.0,
+      "timestamp": "2025-10-02T15:57:12.605097"
+    },
+    {
+      "level": "error",
+      "message": "error_rate below threshold: 0.060 < 0.100",
+      "metric_name": "error_rate",
+      "value": 0.06000000000000005,
+      "threshold": 0.1,
+      "timestamp": "2025-10-02T15:57:12.605889"
+    }
+  ]
+}
