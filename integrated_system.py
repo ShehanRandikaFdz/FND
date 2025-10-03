@@ -13,7 +13,7 @@ from typing import Dict, Any, List
 import json
 
 # Import existing model predictor
-from app_final import ModelPredictor
+from app import ModelPredictor
 
 # Import verdict agent
 from verdict_agent import VerdictAgent, ModelResult, VerdictType, ConfidenceLevel
