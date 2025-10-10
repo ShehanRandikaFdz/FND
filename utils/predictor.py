@@ -117,9 +117,9 @@ class UnifiedPredictor:
             return {"prediction": "ERROR", "confidence": 0.0, "error": str(e)}
     
     def predict_bert(self, text: str) -> Dict:
-        """Get BERT prediction with memory optimization"""
+        """Get hybrid BERT prediction (DistilBERT + Logistic Regression) with memory optimization"""
         try:
-            if self.model_loader.models.get('bert') is None:
+            if self.model_loader.models.get('bert') is None or self.model_loader.models.get('bert_classifier') is None:
                 return {"prediction": "ERROR", "confidence": 0.0, "error": "BERT model not loaded"}
             
             clean_text = self.preprocess_text(text)
@@ -134,16 +134,22 @@ class UnifiedPredictor:
                 padding='max_length'
             )
             
-            # Get prediction
+            # Get BERT embeddings (feature extraction)
             with torch.no_grad():
                 outputs = self.model_loader.models['bert'](**inputs)
-                probabilities = torch.softmax(outputs.logits, dim=-1)
+                # Use the [CLS] token embedding (first token)
+                embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+            
+            # Use logistic regression classifier for prediction
+            classifier = self.model_loader.models['bert_classifier']
+            prediction = classifier.predict(embeddings)[0]
+            probabilities = classifier.predict_proba(embeddings)[0]
             
             # Interpret results (0=TRUE, 1=FAKE)
-            true_prob = probabilities[0][0].item() * 100
-            fake_prob = probabilities[0][1].item() * 100
+            true_prob = probabilities[0] * 100
+            fake_prob = probabilities[1] * 100
             
-            pred_label = "FAKE" if fake_prob > 50 else "TRUE"
+            pred_label = "FAKE" if prediction == 1 else "TRUE"
             confidence = max(fake_prob, true_prob)
             
             return {

@@ -10,7 +10,7 @@ import numpy as np
 import streamlit as st
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.text import Tokenizer
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from transformers import DistilBertTokenizer, DistilBertModel
 import gc
 
 class ModelLoader:
@@ -69,26 +69,29 @@ class ModelLoader:
             return False
     
     def load_bert_model(self):
-        """Load BERT model with memory optimization"""
+        """Load hybrid BERT model (Pre-trained DistilBERT + Logistic Regression) with memory optimization"""
         try:
-            bert_path = os.path.join(self.models_dir, "distilbert_fake_news_model")
+            bert_path = os.path.join(self.models_dir, "bert_fake_news_model")
+            classifier_path = os.path.join(bert_path, "classifier.pkl")
             
-            if os.path.exists(bert_path):
+            if os.path.exists(classifier_path):
                 # Set memory-efficient settings
                 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
                 
-                # Load with optimizations
-                self.models['bert'] = DistilBertForSequenceClassification.from_pretrained(
-                    bert_path,
-                    local_files_only=True,
+                # Load pre-trained DistilBERT for feature extraction (no local weights needed)
+                self.models['bert'] = DistilBertModel.from_pretrained(
+                    "distilbert-base-uncased",  # Use pre-trained model
                     torch_dtype=torch.float16,  # Half precision for memory efficiency
                     low_cpu_mem_usage=True
                 )
                 
                 self.tokenizers['bert'] = DistilBertTokenizer.from_pretrained(
-                    bert_path,
-                    local_files_only=True
+                    "distilbert-base-uncased"  # Use pre-trained tokenizer
                 )
+                
+                # Load the logistic regression classifier
+                with open(classifier_path, 'rb') as f:
+                    self.models['bert_classifier'] = pickle.load(f)
                 
                 # Set model to evaluation mode and optimize
                 self.models['bert'].eval()
@@ -182,9 +185,9 @@ def get_model_info():
             'strength': 'Good at capturing temporal patterns'
         },
         'bert': {
-            'name': 'DistilBERT',
-            'accuracy': 75.0,
-            'description': 'Transformer model with attention mechanism',
-            'strength': 'Excellent at understanding context and semantics'
+            'name': 'DistilBERT (Hybrid)',
+            'accuracy': 89.0,
+            'description': 'Pre-trained DistilBERT + Custom Logistic Regression classifier',
+            'strength': 'Excellent at understanding context with efficient hybrid approach'
         }
     }
