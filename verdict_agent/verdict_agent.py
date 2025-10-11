@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from enum import Enum
 import re
 import requests
-from flask import Flask, request, jsonify
 import numpy as np
 
 # Configure logging
