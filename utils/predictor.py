@@ -9,17 +9,17 @@ import torch
 from typing import Dict, List, Any, Optional
 import streamlit as st
 
-# Import prediction functions from main_three_models.py
+# Import prediction functions (will be implemented directly)
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 try:
-    from main_three_models import preprocess_text, predict_svm, predict_lstm, predict_bert
     from credibility_analyzer.credibility_analyzer import CredibilityAnalyzer
     from verdict_agent.verdict_agent import VerdictAgent, ModelResult, VerdictType
+    ADVANCED_COMPONENTS_AVAILABLE = True
 except ImportError as e:
-    st.warning(f"Some components not available: {e}")
+    ADVANCED_COMPONENTS_AVAILABLE = False
+    st.warning(f"Advanced components not available: {e}")
 
 class UnifiedPredictor:
     """Unified prediction interface for all models and analysis systems"""
@@ -32,19 +32,22 @@ class UnifiedPredictor:
     
     def _initialize_analysis_systems(self):
         """Initialize credibility analyzer and verdict agent"""
-        try:
-            # Initialize credibility analyzer
-            self.credibility_analyzer = CredibilityAnalyzer(models_dir="models")
-            st.success("✅ Credibility Analyzer initialized")
-        except Exception as e:
-            st.warning(f"⚠️ Credibility Analyzer not available: {e}")
-        
-        try:
-            # Initialize verdict agent
-            self.verdict_agent = VerdictAgent()
-            st.success("✅ Verdict Agent initialized")
-        except Exception as e:
-            st.warning(f"⚠️ Verdict Agent not available: {e}")
+        if ADVANCED_COMPONENTS_AVAILABLE:
+            try:
+                # Initialize credibility analyzer
+                self.credibility_analyzer = CredibilityAnalyzer(models_dir="models")
+                st.success("✅ Credibility Analyzer initialized")
+            except Exception as e:
+                st.warning(f"⚠️ Credibility Analyzer not available: {e}")
+            
+            try:
+                # Initialize verdict agent
+                self.verdict_agent = VerdictAgent()
+                st.success("✅ Verdict Agent initialized")
+            except Exception as e:
+                st.warning(f"⚠️ Verdict Agent not available: {e}")
+        else:
+            st.info("ℹ️ Advanced components not available, using basic prediction")
     
     def preprocess_text(self, text: str) -> str:
         """Clean and preprocess text"""

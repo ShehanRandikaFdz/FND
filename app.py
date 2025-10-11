@@ -9,8 +9,8 @@ import sys
 import time
 from pathlib import Path
 
-# Add utils to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
+# Add current directory to path for utils import
+sys.path.insert(0, os.path.dirname(__file__))
 
 # Page configuration
 st.set_page_config(
