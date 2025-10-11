@@ -44,8 +44,8 @@ class CredibilityAnalyzer:
         # Load SVM
         try:
             self.models['svm'] = {
-                'model': joblib.load(os.path.join(self.models_dir, "final_linear_svm.pkl")),
-                'vectorizer': joblib.load(os.path.join(self.models_dir, "final_vectorizer.pkl")),
+                'model': joblib.load(os.path.join(self.models_dir, "new_svm_model.pkl")),
+                'vectorizer': joblib.load(os.path.join(self.models_dir, "new_svm_vectorizer.pkl")),
                 'accuracy': 0.9959,
                 'weight': 0.4,  # Higher weight due to best accuracy
                 'type': 'Traditional ML'

@@ -76,12 +76,18 @@ class ModelLoader:
             tokenizer_path = os.path.join(self.models_dir, "lstm_tokenizer.pkl")
             
             if os.path.exists(lstm_path) and os.path.exists(tokenizer_path):
-                self.models['lstm'] = load_model(lstm_path)
-                with open(tokenizer_path, 'rb') as f:
-                    self.tokenizers['lstm'] = pickle.load(f)
-                
-                self.model_status['lstm'] = "loaded"
-                return True
+                try:
+                    # Try loading with compatibility settings
+                    self.models['lstm'] = load_model(lstm_path, compile=False)
+                    with open(tokenizer_path, 'rb') as f:
+                        self.tokenizers['lstm'] = pickle.load(f)
+                    
+                    self.model_status['lstm'] = "loaded"
+                    return True
+                except Exception as model_error:
+                    st.warning(f"LSTM model loading failed: {model_error}")
+                    self.model_status['lstm'] = "compatibility_error"
+                    return False
             else:
                 self.model_status['lstm'] = "not_found"
                 return False
@@ -107,11 +113,22 @@ class ModelLoader:
                 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
                 
                 # Load pre-trained DistilBERT for feature extraction (no local weights needed)
-                self.models['bert'] = DistilBertModel.from_pretrained(
-                    "distilbert-base-uncased",  # Use pre-trained model
-                    torch_dtype=torch.float16,  # Half precision for memory efficiency
-                    low_cpu_mem_usage=True
-                )
+                try:
+                    self.models['bert'] = DistilBertModel.from_pretrained(
+                        "distilbert-base-uncased",  # Use pre-trained model
+                        torch_dtype=torch.float16,  # Half precision for memory efficiency
+                        low_cpu_mem_usage=True
+                    )
+                except Exception as bert_error:
+                    if "numpy._core" in str(bert_error):
+                        st.warning("BERT model: numpy compatibility issue, trying alternative loading...")
+                        # Try without specific torch_dtype
+                        self.models['bert'] = DistilBertModel.from_pretrained(
+                            "distilbert-base-uncased",
+                            low_cpu_mem_usage=True
+                        )
+                    else:
+                        raise bert_error
                 
                 self.tokenizers['bert'] = DistilBertTokenizer.from_pretrained(
                     "distilbert-base-uncased"  # Use pre-trained tokenizer

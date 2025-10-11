@@ -50,8 +50,8 @@ class ExplainabilityEngine:
     def _load_svm_components(self):
         """Load SVM model and vectorizer for feature importance analysis."""
         try:
-            self.svm_model = joblib.load('models/final_linear_svm.pkl')
-            self.svm_vectorizer = joblib.load('models/final_vectorizer.pkl')
+            self.svm_model = joblib.load('models/new_svm_model.pkl')
+            self.svm_vectorizer = joblib.load('models/new_svm_vectorizer.pkl')
         except Exception as e:
             print(f"Warning: Could not load SVM components for explainability: {e}")
     
