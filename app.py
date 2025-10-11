@@ -79,6 +79,12 @@ def load_system():
         from utils.predictor import UnifiedPredictor
         
         model_loader = ModelLoader()
+        
+        # Load all models
+        model_loader.load_svm_model()
+        model_loader.load_lstm_model()
+        model_loader.load_bert_model()
+        
         predictor = UnifiedPredictor(model_loader)
         
         return model_loader, predictor, True
@@ -170,15 +176,14 @@ def prediction_page():
         
         with st.spinner("Analyzing article..."):
             try:
-                # Get prediction
-                if use_ensemble and st.session_state.predictor:
-                    result = st.session_state.predictor.get_ensemble_prediction(text_input)
+                # Get prediction using majority voting
+                if st.session_state.predictor:
+                    result = st.session_state.predictor.ensemble_predict_majority(text_input)
                 else:
-                    # Use individual model predictions
-                    result = {"prediction": "TRUE", "confidence": 75.0, "error": "Individual predictions not implemented"}
+                    result = {"final_prediction": "ERROR", "error": "Predictor not initialized"}
                 
                 # Display results
-                display_prediction_result(result, show_confidence)
+                display_majority_voting_result(result, show_confidence)
                 
                 # Additional analysis
                 if use_credibility:
@@ -192,19 +197,23 @@ def prediction_page():
             except Exception as e:
                 st.error(f"Error during analysis: {e}")
 
-def display_prediction_result(result, show_confidence=True):
-    """Display prediction results"""
+def display_majority_voting_result(result, show_confidence=True):
+    """Display majority voting results with detailed breakdown"""
     st.subheader("📊 Analysis Results")
     
     if "error" in result:
         st.error(f"Error: {result['error']}")
         return
     
-    prediction = result.get("prediction", "UNKNOWN")
+    final_prediction = result.get("final_prediction", "UNKNOWN")
     confidence = result.get("confidence", 0)
+    votes = result.get("votes", {"FAKE": 0, "TRUE": 0})
+    individual_results = result.get("individual_results", {})
+    total_models = result.get("total_models", 0)
+    majority_rule = result.get("majority_rule", True)
     
     # Determine result styling
-    if prediction == "FAKE":
+    if final_prediction == "FAKE":
         result_class = "fake-result"
         icon = "🚨"
         color = "#f44336"
@@ -221,19 +230,60 @@ def display_prediction_result(result, show_confidence=True):
     else:
         conf_class = "confidence-low"
     
-    # Display result
+    # Display final result
     st.markdown(f"""
     <div class="prediction-result {result_class}">
-        <h3>{icon} Prediction: {prediction}</h3>
+        <h3>{icon} Final Prediction: {final_prediction}</h3>
         <p class="{conf_class}">Confidence: {confidence:.1f}%</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Additional details
-    if show_confidence and "model_predictions" in result:
-        st.subheader("Individual Model Results")
-        for model, pred in result["model_predictions"].items():
-            st.write(f"**{model}**: {pred['prediction']} ({pred['confidence']:.1f}%)")
+    # Voting breakdown
+    st.subheader("🗳️ Voting Breakdown")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("FAKE Votes", votes["FAKE"], f"{votes['FAKE']}/{total_models} models")
+    
+    with col2:
+        st.metric("TRUE Votes", votes["TRUE"], f"{votes['TRUE']}/{total_models} models")
+    
+    with col3:
+        decision_method = "Majority Rule" if majority_rule else "Confidence Tie-breaker"
+        st.metric("Decision Method", decision_method)
+    
+    # Individual model results
+    if show_confidence and individual_results:
+        st.subheader("🤖 Individual Model Predictions")
+        
+        for model_name, model_result in individual_results.items():
+            pred = model_result.get("prediction", "UNKNOWN")
+            conf = model_result.get("confidence", 0)
+            
+            # Model-specific styling
+            if pred == "FAKE":
+                model_icon = "🔴"
+                model_color = "#ffcdd2"
+            else:
+                model_icon = "🟢"
+                model_color = "#c8e6c9"
+            
+            with st.container():
+                st.markdown(f"""
+                <div style="background-color: {model_color}; padding: 10px; border-radius: 5px; margin: 5px 0;">
+                    <strong>{model_icon} {model_name.upper()}</strong>: {pred} ({conf:.1f}%)
+                </div>
+                """, unsafe_allow_html=True)
+    
+    # Summary
+    if total_models > 0:
+        if majority_rule:
+            st.info(f"✅ **Majority Decision**: {votes['FAKE']} models voted FAKE, {votes['TRUE']} models voted TRUE")
+        else:
+            st.warning(f"⚖️ **Tie-Breaker**: Equal votes, decision based on highest confidence")
+    else:
+        st.error("❌ No models were available for prediction")
 
 def comparison_page():
     """Model comparison page"""

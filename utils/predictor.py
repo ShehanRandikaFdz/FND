@@ -228,6 +228,74 @@ class UnifiedPredictor:
                 "error": str(e)
             }
     
+    def ensemble_predict_majority(self, text: str) -> Dict:
+        """Get ensemble prediction using majority voting"""
+        try:
+            predictions = []
+            results = {}
+            
+            # Get predictions from each available model
+            if self.model_loader.model_status.get('svm') == 'loaded':
+                svm_result = self.predict_svm(text)
+                if svm_result['prediction'] != 'ERROR':
+                    predictions.append(svm_result['prediction'])
+                    results['svm'] = svm_result
+            
+            if self.model_loader.model_status.get('lstm') == 'loaded':
+                lstm_result = self.predict_lstm(text)
+                if lstm_result['prediction'] != 'ERROR':
+                    predictions.append(lstm_result['prediction'])
+                    results['lstm'] = lstm_result
+            
+            if self.model_loader.model_status.get('bert') == 'loaded':
+                bert_result = self.predict_bert(text)
+                if bert_result['prediction'] != 'ERROR':
+                    predictions.append(bert_result['prediction'])
+                    results['bert'] = bert_result
+            
+            if not predictions:
+                return {
+                    "final_prediction": "ERROR",
+                    "votes": {"FAKE": 0, "TRUE": 0},
+                    "individual_results": {},
+                    "error": "No models available for prediction"
+                }
+            
+            # Count votes
+            fake_votes = predictions.count('FAKE')
+            true_votes = predictions.count('TRUE')
+            
+            # Determine winner
+            if fake_votes > true_votes:
+                final = 'FAKE'
+                confidence = max([r['confidence'] for r in results.values() if r['prediction'] == 'FAKE'])
+            elif true_votes > fake_votes:
+                final = 'TRUE'
+                confidence = max([r['confidence'] for r in results.values() if r['prediction'] == 'TRUE'])
+            else:
+                # Tie-breaker: highest confidence among all results
+                best_result = max(results.values(), key=lambda x: x['confidence'])
+                final = best_result['prediction']
+                confidence = best_result['confidence']
+            
+            return {
+                "final_prediction": final,
+                "confidence": round(confidence, 2),
+                "votes": {"FAKE": fake_votes, "TRUE": true_votes},
+                "individual_results": results,
+                "total_models": len(predictions),
+                "majority_rule": fake_votes != true_votes
+            }
+            
+        except Exception as e:
+            return {
+                "final_prediction": "ERROR",
+                "confidence": 0.0,
+                "votes": {"FAKE": 0, "TRUE": 0},
+                "individual_results": {},
+                "error": str(e)
+            }
+
     def get_credibility_analysis(self, text: str) -> Dict:
         """Get credibility analysis if available"""
         try:
