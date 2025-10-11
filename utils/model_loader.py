@@ -26,6 +26,10 @@ try:
 except ImportError as e:
     st.warning(f"Transformers not available: {e}")
     TRANSFORMERS_AVAILABLE = False
+except AttributeError as e:
+    if "register_pytree_node" in str(e):
+        st.warning(f"PyTorch compatibility issue: {e}. Please check PyTorch version.")
+    TRANSFORMERS_AVAILABLE = False
 
 class ModelLoader:
     """Load and manage all three models with memory optimization"""
