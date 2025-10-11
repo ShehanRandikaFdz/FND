@@ -52,12 +52,15 @@ class CredibilityAnalyzer:
             }
             print("✅ SVM model loaded")
         except Exception as e:
-            print(f"❌ Error loading SVM model: {e}")
+            if "numpy._core" in str(e):
+                print("⚠️ SVM model: numpy compatibility issue - skipping")
+            else:
+                print(f"❌ Error loading SVM model: {e}")
         
         # Load LSTM
         try:
             self.models['lstm'] = {
-                'model': tf.keras.models.load_model(f'{self.models_dir}/lstm_fake_news_model.h5'),
+                'model': tf.keras.models.load_model(f'{self.models_dir}/lstm_fake_news_model.h5', compile=False),
                 'tokenizer': pickle.load(open(f'{self.models_dir}/lstm_tokenizer.pkl', 'rb')),
                 'accuracy': 0.9890,
                 'weight': 0.35,  # Good accuracy, sequential understanding
@@ -65,7 +68,10 @@ class CredibilityAnalyzer:
             }
             print("✅ LSTM model loaded")
         except Exception as e:
-            print(f"❌ Error loading LSTM model: {e}")
+            if "batch_shape" in str(e):
+                print("⚠️ LSTM model: TensorFlow compatibility issue - skipping")
+            else:
+                print(f"❌ Error loading LSTM model: {e}")
         
         # Load BERT
         try:
@@ -79,7 +85,10 @@ class CredibilityAnalyzer:
             }
             print("✅ BERT model loaded")
         except Exception as e:
-            print(f"❌ Error loading BERT model: {e}")
+            if "numpy._core" in str(e):
+                print("⚠️ BERT model: numpy compatibility issue - skipping")
+            else:
+                print(f"❌ Error loading BERT model: {e}")
     
     def _initialize_ensemble_weights(self):
         """Initialize ensemble weights based on model performance."""
