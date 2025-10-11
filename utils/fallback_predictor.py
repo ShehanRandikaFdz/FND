@@ -69,21 +69,27 @@ class FallbackPredictor:
         if len(urls) > 2:
             fake_score += 1
         
-        # Calculate scores
+        # Calculate scores with better weighting
         total_indicators = len(self.fake_indicators) + len(self.credibility_indicators) + len(self.emotional_words)
-        fake_percentage = (fake_score / total_indicators) * 100
-        credibility_percentage = (credibility_score / total_indicators) * 100
         
-        # Determine prediction
-        if fake_score > credibility_score:
+        # Normalize scores to 0-1 range
+        fake_normalized = min(1.0, fake_score / max(1, len(self.fake_indicators)))
+        credibility_normalized = min(1.0, credibility_score / max(1, len(self.credibility_indicators)))
+        
+        # Determine prediction with improved logic
+        if fake_normalized > credibility_normalized + 0.1:  # Clear fake signal
             prediction = "FAKE"
-            confidence = min(85, fake_percentage + 20)
-        elif credibility_score > fake_score:
+            confidence = min(85, 50 + (fake_normalized * 35))
+        elif credibility_normalized > fake_normalized + 0.1:  # Clear true signal
             prediction = "TRUE"
-            confidence = min(85, credibility_percentage + 20)
-        else:
-            prediction = "TRUE"  # Default to true when uncertain
-            confidence = 60
+            confidence = min(85, 50 + (credibility_normalized * 35))
+        else:  # Close call - use additional factors
+            if caps_ratio > 0.2 or punct_count > 3:
+                prediction = "FAKE"
+                confidence = 65
+            else:
+                prediction = "TRUE"
+                confidence = 65
         
         return {
             "final_prediction": prediction,
@@ -103,6 +109,8 @@ class FallbackPredictor:
                 "credibility_indicators_found": credibility_score,
                 "emotional_language_score": emotional_score,
                 "caps_ratio": round(caps_ratio, 3),
-                "suspicious_urls": len(urls)
+                "suspicious_urls": len(urls),
+                "fake_normalized": round(fake_normalized, 3),
+                "credibility_normalized": round(credibility_normalized, 3)
             }
         }
