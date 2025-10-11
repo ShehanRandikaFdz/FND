@@ -1,8 +1,17 @@
-streamlit>=1.28.0
-torch>=2.1.0
-transformers>=4.35.0
-tensorflow>=2.13.0
-scikit-learn>=1.3.0
-pandas>=2.0.0
-numpy>=1.24.0
-plotly>=5.17.0
+# Core dependencies with specific versions to avoid conflicts
+streamlit==1.28.1
+torch==2.1.2
+transformers==4.35.2
+tensorflow==2.13.1
+scikit-learn==1.3.2
+pandas==2.0.3
+numpy==1.24.4
+plotly==5.17.0
+
+# Fix protobuf and related compatibility issues
+protobuf==3.20.3
+tensorboard==2.13.0
+
+# Additional dependencies that might be needed
+h5py==3.9.0
+keras==2.13.1

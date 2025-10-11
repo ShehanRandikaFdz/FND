@@ -8,10 +8,24 @@ import pickle
 import torch
 import numpy as np
 import streamlit as st
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.text import Tokenizer
-from transformers import DistilBertTokenizer, DistilBertModel
 import gc
+
+# Handle TensorFlow imports with error handling
+try:
+    from tensorflow.keras.models import load_model
+    from tensorflow.keras.preprocessing.text import Tokenizer
+    TENSORFLOW_AVAILABLE = True
+except ImportError as e:
+    st.warning(f"TensorFlow not available: {e}")
+    TENSORFLOW_AVAILABLE = False
+
+# Handle Transformers imports with error handling
+try:
+    from transformers import DistilBertTokenizer, DistilBertModel
+    TRANSFORMERS_AVAILABLE = True
+except ImportError as e:
+    st.warning(f"Transformers not available: {e}")
+    TRANSFORMERS_AVAILABLE = False
 
 class ModelLoader:
     """Load and manage all three models with memory optimization"""
@@ -48,6 +62,11 @@ class ModelLoader:
     
     def load_lstm_model(self):
         """Load LSTM model and tokenizer"""
+        if not TENSORFLOW_AVAILABLE:
+            st.warning("TensorFlow not available - skipping LSTM model")
+            self.model_status['lstm'] = "tensorflow_unavailable"
+            return False
+            
         try:
             lstm_path = os.path.join(self.models_dir, "lstm_fake_news_model.h5")
             tokenizer_path = os.path.join(self.models_dir, "lstm_tokenizer.pkl")
@@ -70,6 +89,11 @@ class ModelLoader:
     
     def load_bert_model(self):
         """Load hybrid BERT model (Pre-trained DistilBERT + Logistic Regression) with memory optimization"""
+        if not TRANSFORMERS_AVAILABLE:
+            st.warning("Transformers not available - skipping BERT model")
+            self.model_status['bert'] = "transformers_unavailable"
+            return False
+            
         try:
             bert_path = os.path.join(self.models_dir, "bert_fake_news_model")
             classifier_path = os.path.join(bert_path, "classifier.pkl")
