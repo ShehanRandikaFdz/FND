@@ -277,7 +277,17 @@ def display_majority_voting_result(result, show_confidence=True):
                 """, unsafe_allow_html=True)
     
     # Summary
-    if total_models > 0:
+    if result.get('fallback_mode', False):
+        st.warning("⚠️ **Fallback Mode**: ML models unavailable, using rule-based analysis")
+        if 'analysis_details' in result:
+            details = result['analysis_details']
+            with st.expander("📊 Analysis Details"):
+                st.write(f"**Fake Indicators Found**: {details.get('fake_indicators_found', 0)}")
+                st.write(f"**Credibility Indicators Found**: {details.get('credibility_indicators_found', 0)}")
+                st.write(f"**Emotional Language Score**: {details.get('emotional_language_score', 0)}")
+                st.write(f"**Capitalization Ratio**: {details.get('caps_ratio', 0)}")
+                st.write(f"**Suspicious URLs**: {details.get('suspicious_urls', 0)}")
+    elif total_models > 0:
         if majority_rule:
             st.info(f"✅ **Majority Decision**: {votes['FAKE']} models voted FAKE, {votes['TRUE']} models voted TRUE")
         else:

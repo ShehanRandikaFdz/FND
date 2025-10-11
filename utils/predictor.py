@@ -253,13 +253,21 @@ class UnifiedPredictor:
                     predictions.append(bert_result['prediction'])
                     results['bert'] = bert_result
             
+            # If no ML models are available, use fallback predictor
             if not predictions:
-                return {
-                    "final_prediction": "ERROR",
-                    "votes": {"FAKE": 0, "TRUE": 0},
-                    "individual_results": {},
-                    "error": "No models available for prediction"
-                }
+                try:
+                    from utils.fallback_predictor import FallbackPredictor
+                    fallback = FallbackPredictor()
+                    fallback_result = fallback.analyze_text(text)
+                    fallback_result["fallback_mode"] = True
+                    return fallback_result
+                except Exception as fallback_error:
+                    return {
+                        "final_prediction": "ERROR",
+                        "votes": {"FAKE": 0, "TRUE": 0},
+                        "individual_results": {},
+                        "error": f"No models available and fallback failed: {fallback_error}"
+                    }
             
             # Count votes
             fake_votes = predictions.count('FAKE')
