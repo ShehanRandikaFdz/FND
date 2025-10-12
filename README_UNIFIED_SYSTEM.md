@@ -6,17 +6,12 @@ Your unified news verification system is now complete and ready to use! This sys
 
 ## 🚀 Quick Start
 
-### Option 1: Simple Launcher (Recommended)
-```bash
-python run_app.py
-```
-
-### Option 2: Direct Streamlit Command
+### Run the Unified System
 ```bash
 python -m streamlit run app.py
 ```
 
-### Option 3: If streamlit command not found
+### Alternative: If streamlit command not found
 ```bash
 python -c "import streamlit.web.cli as stcli; import sys; sys.argv = ['streamlit', 'run', 'app.py']; stcli.main()"
 ```
@@ -170,3 +165,5 @@ Result: Live feed of tech news with credibility scores
 Your unified news verification system is **production-ready** and combines the best of both ML prediction and online source verification in a single, powerful interface!
 
 **Ready to detect fake news with unprecedented accuracy? Let's go! 🚀**
+
+Just run `python -m streamlit run app.py` and start analyzing news!
