@@ -116,16 +116,15 @@ class ModelLoader:
                 try:
                     self.models['bert'] = DistilBertModel.from_pretrained(
                         "distilbert-base-uncased",  # Use pre-trained model
-                        torch_dtype=torch.float16,  # Half precision for memory efficiency
-                        low_cpu_mem_usage=True
+                        low_cpu_mem_usage=False  # Disable to avoid accelerate dependency
                     )
                 except Exception as bert_error:
-                    if "numpy._core" in str(bert_error):
-                        st.warning("BERT model: numpy compatibility issue, trying alternative loading...")
-                        # Try without specific torch_dtype
+                    error_msg = str(bert_error)
+                    if "numpy._core" in error_msg or "Accelerate" in error_msg:
+                        st.warning(f"BERT model compatibility issue: {error_msg[:100]}, trying alternative loading...")
+                        # Try basic loading without any special options
                         self.models['bert'] = DistilBertModel.from_pretrained(
-                            "distilbert-base-uncased",
-                            low_cpu_mem_usage=True
+                            "distilbert-base-uncased"
                         )
                     else:
                         raise bert_error
@@ -138,9 +137,14 @@ class ModelLoader:
                 with open(classifier_path, 'rb') as f:
                     self.models['bert_classifier'] = pickle.load(f)
                 
-                # Set model to evaluation mode and optimize
+                # Set model to evaluation mode
                 self.models['bert'].eval()
-                self.models['bert'] = self.models['bert'].half()  # Convert to half precision
+                
+                # Only use half precision if supported
+                try:
+                    self.models['bert'] = self.models['bert'].half()  # Convert to half precision
+                except Exception:
+                    pass  # Skip if half precision not supported
                 
                 self.model_status['bert'] = "loaded"
                 return True

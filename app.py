@@ -12,6 +12,18 @@ from pathlib import Path
 # Add current directory to path for utils import
 sys.path.insert(0, os.path.dirname(__file__))
 
+# Apply compatibility fixes for Hugging Face Spaces
+try:
+    from utils.compatibility import fix_numpy_compatibility, print_dependency_report
+    fix_numpy_compatibility()
+    
+    # Print dependency report on first load (optional - can be commented out)
+    if 'deps_checked' not in st.session_state:
+        print_dependency_report()
+        st.session_state.deps_checked = True
+except ImportError as e:
+    st.warning(f"Compatibility layer not available: {e}")
+
 # Page configuration
 st.set_page_config(
     page_title="Fake News Detection System",
