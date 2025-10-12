@@ -453,7 +453,7 @@ def main():
         # Check if NewsAPI is configured
         try:
             from config import config
-            if config.validate():
+            if hasattr(config, 'validate') and config.validate():
                 st.success("✅ NewsAPI configured - Real-time monitoring available")
                 
                 # Simple news fetching interface
@@ -512,6 +512,8 @@ def main():
                             else:
                                 st.warning("No articles fetched")
                                 
+                        except ImportError:
+                            st.warning("⚠️ News fetcher not available. Please ensure all dependencies are installed.")
                         except Exception as e:
                             st.error(f"Failed to fetch news: {e}")
             else:
