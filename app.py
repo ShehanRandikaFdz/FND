@@ -1,32 +1,27 @@
 """
-Fake News Detection System - Streamlit App
-Multi-page application with SVM, LSTM, and BERT models
+Unified Fake News Detection & Verification System
+Combines ML prediction with automatic online news verification
 """
 
 import streamlit as st
 import os
 import sys
 import time
-from pathlib import Path
+from datetime import datetime
 
-# Add current directory to path for utils import
+# Add current directory to path
 sys.path.insert(0, os.path.dirname(__file__))
 
-# Apply compatibility fixes for Hugging Face Spaces
+# Quick compatibility check
 try:
-    from utils.compatibility import fix_numpy_compatibility, print_dependency_report
+    from utils.compatibility import fix_numpy_compatibility
     fix_numpy_compatibility()
-    
-    # Print dependency report on first load (optional - can be commented out)
-    if 'deps_checked' not in st.session_state:
-        print_dependency_report()
-        st.session_state.deps_checked = True
-except ImportError as e:
-    st.warning(f"Compatibility layer not available: {e}")
+except ImportError:
+    pass
 
 # Page configuration
 st.set_page_config(
-    page_title="Fake News Detection System",
+    page_title="Fake News Detection & Verification System",
     page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -36,16 +31,20 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {
-        font-size: 3rem;
+        font-size: 2.5rem;
         color: #1f77b4;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(120deg, #2196F3, #00BCD4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: bold;
     }
-    .model-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
+    .sub-header {
+        text-align: center;
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
     }
     .prediction-result {
         padding: 1rem;
@@ -57,8 +56,12 @@ st.markdown("""
         border-left: 5px solid #f44336;
     }
     .true-result {
-        background-color: #e8f5e8;
+        background-color: #e8f5e9;
         border-left: 5px solid #4caf50;
+    }
+    .verified-result {
+        background-color: #e3f2fd;
+        border-left: 5px solid #2196f3;
     }
     .confidence-high {
         color: #4caf50;
@@ -72,16 +75,40 @@ st.markdown("""
         color: #f44336;
         font-weight: bold;
     }
+    .model-card {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 0.5rem 0;
+        border-left: 4px solid #007bff;
+    }
+    .verification-card {
+        background-color: #f0f8ff;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 0.5rem 0;
+        border-left: 4px solid #17a2b8;
+    }
+    .article-card {
+        background-color: #ffffff;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 0.5rem 0;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'models_loaded' not in st.session_state:
-    st.session_state.models_loaded = False
-if 'model_loader' not in st.session_state:
-    st.session_state.model_loader = None
+if 'analyzer' not in st.session_state:
+    st.session_state.analyzer = None
+if 'loading_time' not in st.session_state:
+    st.session_state.loading_time = None
 if 'predictor' not in st.session_state:
     st.session_state.predictor = None
+if 'preprocessor' not in st.session_state:
+    st.session_state.preprocessor = None
 
 @st.cache_resource
 def load_system():
@@ -89,6 +116,7 @@ def load_system():
     try:
         from utils.model_loader import ModelLoader
         from utils.predictor import UnifiedPredictor
+        from utils.text_preprocessor import TextPreprocessor
         
         model_loader = ModelLoader()
         
@@ -98,177 +126,28 @@ def load_system():
         model_loader.load_bert_model()
         
         predictor = UnifiedPredictor(model_loader)
+        preprocessor = TextPreprocessor()
         
-        return model_loader, predictor, True
+        return model_loader, predictor, preprocessor, True
     except Exception as e:
         st.error(f"Error loading system: {e}")
-        return None, None, False
+        return None, None, None, False
 
-def main():
-    """Main application"""
-    st.markdown('<h1 class="main-header">🔍 Fake News Detection System</h1>', unsafe_allow_html=True)
+def display_ml_predictions(ml_results):
+    """Display ML prediction results"""
+    st.subheader("🤖 ML Model Predictions")
     
-    # Load system components
-    if not st.session_state.models_loaded:
-        with st.spinner("Loading ML models..."):
-            model_loader, predictor, success = load_system()
-            if success:
-                st.session_state.model_loader = model_loader
-                st.session_state.predictor = predictor
-                st.session_state.models_loaded = True
-                st.success("✅ Models loaded successfully!")
-            else:
-                st.error("❌ Failed to load models")
-                return
-    
-    # Sidebar navigation
-    st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox(
-        "Choose a page:",
-        ["Prediction", "Model Comparison", "Statistics", "About"]
-    )
-    
-    # Page routing
-    if page == "Prediction":
-        prediction_page()
-    elif page == "Model Comparison":
-        comparison_page()
-    elif page == "Statistics":
-        statistics_page()
-    elif page == "About":
-        about_page()
-
-def prediction_page():
-    """Main prediction page"""
-    st.header("📰 News Article Analysis")
-    
-    # Input section
-    st.subheader("Enter News Article")
-    
-    # Text input options
-    input_method = st.radio(
-        "Choose input method:",
-        ["Type/Paste Text", "Upload File"]
-    )
-    
-    text_input = ""
-    
-    if input_method == "Type/Paste Text":
-        text_input = st.text_area(
-            "Enter the news article text:",
-            height=200,
-            placeholder="Paste your news article here..."
-        )
-    else:
-        uploaded_file = st.file_uploader(
-            "Upload a text file:",
-            type=['txt', 'md']
-        )
-        if uploaded_file:
-            text_input = str(uploaded_file.read(), "utf-8")
-            st.text_area("File content:", value=text_input, height=200)
-    
-    # Analysis options
-    st.subheader("Analysis Options")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        use_ensemble = st.checkbox("Use Ensemble Prediction", value=True)
-        show_confidence = st.checkbox("Show Confidence Scores", value=True)
-    
-    with col2:
-        use_credibility = st.checkbox("Use Credibility Analysis", value=True)
-        use_verdict = st.checkbox("Use Verdict Agent", value=True)
-    
-    # Predict button
-    if st.button("🔍 Analyze Article", type="primary"):
-        if not text_input.strip():
-            st.warning("Please enter some text to analyze.")
-            return
-        
-        with st.spinner("Analyzing article..."):
-            try:
-                # Get prediction using majority voting
-                if st.session_state.predictor:
-                    result = st.session_state.predictor.ensemble_predict_majority(text_input)
-                else:
-                    result = {"final_prediction": "ERROR", "error": "Predictor not initialized"}
-                
-                # Display results
-                display_majority_voting_result(result, show_confidence)
-                
-                # Additional analysis
-                if use_credibility:
-                    st.subheader("🔍 Credibility Analysis")
-                    st.info("Credibility analysis features would be implemented here.")
-                
-                if use_verdict:
-                    st.subheader("⚖️ Verdict Agent")
-                    st.info("Verdict agent features would be implemented here.")
-                
-            except Exception as e:
-                st.error(f"Error during analysis: {e}")
-
-def display_majority_voting_result(result, show_confidence=True):
-    """Display majority voting results with detailed breakdown"""
-    st.subheader("📊 Analysis Results")
-    
-    if "error" in result:
-        st.error(f"Error: {result['error']}")
+    if "error" in ml_results:
+        st.error(f"Error: {ml_results['error']}")
         return
     
-    final_prediction = result.get("final_prediction", "UNKNOWN")
-    confidence = result.get("confidence", 0)
-    votes = result.get("votes", {"FAKE": 0, "TRUE": 0})
-    individual_results = result.get("individual_results", {})
-    total_models = result.get("total_models", 0)
-    majority_rule = result.get("majority_rule", True)
+    final_prediction = ml_results.get("final_prediction", "UNKNOWN")
+    confidence = ml_results.get("confidence", 0)
+    individual_results = ml_results.get("individual_results", {})
+    votes = ml_results.get("votes", {"FAKE": 0, "TRUE": 0})
     
-    # Determine result styling
-    if final_prediction == "FAKE":
-        result_class = "fake-result"
-        icon = "🚨"
-        color = "#f44336"
-    else:
-        result_class = "true-result"
-        icon = "✅"
-        color = "#4caf50"
-    
-    # Confidence styling
-    if confidence >= 80:
-        conf_class = "confidence-high"
-    elif confidence >= 60:
-        conf_class = "confidence-medium"
-    else:
-        conf_class = "confidence-low"
-    
-    # Display final result
-    st.markdown(f"""
-    <div class="prediction-result {result_class}">
-        <h3>{icon} Final Prediction: {final_prediction}</h3>
-        <p class="{conf_class}">Confidence: {confidence:.1f}%</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Voting breakdown
-    st.subheader("🗳️ Voting Breakdown")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("FAKE Votes", votes["FAKE"], f"{votes['FAKE']}/{total_models} models")
-    
-    with col2:
-        st.metric("TRUE Votes", votes["TRUE"], f"{votes['TRUE']}/{total_models} models")
-    
-    with col3:
-        decision_method = "Majority Rule" if majority_rule else "Confidence Tie-breaker"
-        st.metric("Decision Method", decision_method)
-    
-    # Individual model results
-    if show_confidence and individual_results:
-        st.subheader("🤖 Individual Model Predictions")
-        
+    # Display individual model results
+    if individual_results:
         for model_name, model_result in individual_results.items():
             pred = model_result.get("prediction", "UNKNOWN")
             conf = model_result.get("confidence", 0)
@@ -283,243 +162,369 @@ def display_majority_voting_result(result, show_confidence=True):
             
             with st.container():
                 st.markdown(f"""
-                <div style="background-color: {model_color}; padding: 10px; border-radius: 5px; margin: 5px 0;">
+                <div class="model-card">
                     <strong>{model_icon} {model_name.upper()}</strong>: {pred} ({conf:.1f}%)
                 </div>
                 """, unsafe_allow_html=True)
     
-    # Summary
-    if result.get('fallback_mode', False):
-        st.warning("⚠️ **Fallback Mode**: ML models unavailable, using rule-based analysis")
-        if 'analysis_details' in result:
-            details = result['analysis_details']
-            with st.expander("📊 Analysis Details"):
-                st.write(f"**Fake Indicators Found**: {details.get('fake_indicators_found', 0)}")
-                st.write(f"**Credibility Indicators Found**: {details.get('credibility_indicators_found', 0)}")
-                st.write(f"**Emotional Language Score**: {details.get('emotional_language_score', 0)}")
-                st.write(f"**Capitalization Ratio**: {details.get('caps_ratio', 0)}")
-                st.write(f"**Suspicious URLs**: {details.get('suspicious_urls', 0)}")
-    elif total_models > 0:
-        if majority_rule:
-            st.info(f"✅ **Majority Decision**: {votes['FAKE']} models voted FAKE, {votes['TRUE']} models voted TRUE")
-        else:
-            st.warning(f"⚖️ **Tie-Breaker**: Equal votes, decision based on highest confidence")
+    # Display voting breakdown
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("FAKE Votes", votes["FAKE"])
+    with col2:
+        st.metric("TRUE Votes", votes["TRUE"])
+    
+    # Display final ML result
+    if final_prediction == "FAKE":
+        result_class = "fake-result"
+        icon = "🚨"
     else:
-        st.error("❌ No models were available for prediction")
+        result_class = "true-result"
+        icon = "✅"
+    
+    st.markdown(f"""
+    <div class="prediction-result {result_class}">
+        <h4>{icon} ML Ensemble Result: {final_prediction}</h4>
+        <p class="confidence-high">Confidence: {confidence:.1f}%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-def comparison_page():
-    """Model comparison page"""
-    st.header("⚖️ Model Comparison")
+def display_verification_results(verification_result):
+    """Display online verification results"""
+    st.subheader("📰 Online Verification")
     
-    st.subheader("Model Information")
+    if not verification_result:
+        st.info("ℹ️ Verification not performed")
+        return
     
-    # Model cards
-    models = [
-        {
-            "name": "SVM",
-            "accuracy": "85%",
-            "description": "Support Vector Machine with TF-IDF features",
-            "strength": "Fast inference, good for short texts"
-        },
-        {
-            "name": "LSTM",
-            "accuracy": "87%",
-            "description": "Long Short-Term Memory neural network",
-            "strength": "Captures sequential patterns in text"
-        },
-        {
-            "name": "DistilBERT (Hybrid)",
-            "accuracy": "89%",
-            "description": "Pre-trained DistilBERT + Custom Logistic Regression",
-            "strength": "Excellent context understanding with efficient hybrid approach"
-        }
-    ]
+    if verification_result.get('found_online', False):
+        best_match = verification_result.get('best_match', {})
+        similarity_score = verification_result.get('similarity_score', 0)
+        all_matches = verification_result.get('all_matches', [])
+        
+        # Display verification summary
+        if similarity_score > 0.8:
+            status_icon = "✅"
+            status_text = "Highly Verified"
+            status_color = "#4caf50"
+        elif similarity_score > 0.6:
+            status_icon = "✅"
+            status_text = "Likely Verified"
+            status_color = "#8bc34a"
+        elif similarity_score > 0.4:
+            status_icon = "⚠️"
+            status_text = "Partially Verified"
+            status_color = "#ff9800"
+        else:
+            status_icon = "❓"
+            status_text = "Weak Match"
+            status_color = "#ff5722"
+        
+        st.markdown(f"""
+        <div class="verification-card">
+            <h4>{status_icon} {status_text}</h4>
+            <p><strong>Similarity Score:</strong> {similarity_score:.1%}</p>
+            <p><strong>Articles Found:</strong> {len(all_matches)}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display best match
+        if best_match:
+            st.markdown("**📄 Best Match:**")
+            source_name = best_match.get('source', {}).get('name', 'Unknown Source')
+            title = best_match.get('title', 'No title')
+            description = best_match.get('description', 'No description')
+            url = best_match.get('url', '#')
+            published_at = best_match.get('publishedAt', 'Unknown date')
+            
+            # Format date
+            try:
+                if published_at and published_at != 'Unknown date':
+                    pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+                    formatted_date = pub_date.strftime('%Y-%m-%d %H:%M')
+                else:
+                    formatted_date = published_at
+            except:
+                formatted_date = published_at
+            
+            with st.container():
+                st.markdown(f"""
+                <div class="article-card">
+                    <h5>{title}</h5>
+                    <p><strong>Source:</strong> {source_name}</p>
+                    <p><strong>Published:</strong> {formatted_date}</p>
+                    <p><strong>Similarity:</strong> {similarity_score:.1%}</p>
+                    <p>{description}</p>
+                    <a href="{url}" target="_blank">Read Full Article →</a>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Display other matches
+        if len(all_matches) > 1:
+            with st.expander(f"📋 View All Matches ({len(all_matches)})"):
+                for i, match in enumerate(all_matches[1:], 2):
+                    source_name = match.get('source', {}).get('name', 'Unknown')
+                    title = match.get('title', 'No title')
+                    similarity = match.get('similarity_score', 0)
+                    url = match.get('url', '#')
+                    
+                    st.markdown(f"""
+                    **{i}.** [{title}]({url})  
+                    *{source_name}* - Similarity: {similarity:.1%}
+                    """)
+    else:
+        error_msg = verification_result.get('error', 'No matching articles found')
+        st.markdown(f"""
+        <div class="verification-card">
+            <h4>❌ Not Found Online</h4>
+            <p>{error_msg}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+def display_final_assessment(final_assessment, ml_results, verification_result):
+    """Display the final credibility assessment"""
+    st.markdown("---")
+    st.subheader("🎯 Final Assessment")
     
-    for model in models:
-        with st.expander(f"🤖 {model['name']} - {model['accuracy']} Accuracy"):
-            st.write(f"**Description:** {model['description']}")
-            st.write(f"**Strength:** {model['strength']}")
+    # Determine assessment styling
+    if 'VERIFIED_TRUE' in final_assessment:
+        assessment_class = "verified-result"
+        assessment_icon = "✅"
+        assessment_color = "#2196f3"
+    elif 'LIKELY_TRUE' in final_assessment:
+        assessment_class = "true-result"
+        assessment_icon = "✅"
+        assessment_color = "#4caf50"
+    elif 'LIKELY_FAKE' in final_assessment:
+        assessment_class = "fake-result"
+        assessment_icon = "🚨"
+        assessment_color = "#f44336"
+    elif 'CONFLICTING' in final_assessment:
+        assessment_class = "prediction-result"
+        assessment_icon = "⚠️"
+        assessment_color = "#ff9800"
+    else:
+        assessment_class = "prediction-result"
+        assessment_icon = "❓"
+        assessment_color = "#666"
     
-    # Performance comparison
-    st.subheader("Performance Metrics")
+    # Create assessment explanation
+    explanation = get_assessment_explanation(final_assessment, ml_results, verification_result)
     
-    import pandas as pd
-    
-    metrics_data = {
-        "Model": ["SVM", "LSTM", "DistilBERT (Hybrid)"],
-        "Accuracy": [85, 87, 89],
-        "Precision": [83, 85, 87],
-        "Recall": [82, 84, 86],
-        "F1-Score": [82.5, 84.5, 86.5]
+    st.markdown(f"""
+    <div class="{assessment_class}">
+        <h3>{assessment_icon} {final_assessment.replace('_', ' ').title()}</h3>
+        <p>{explanation}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def get_assessment_explanation(assessment, ml_results, verification_result):
+    """Generate explanation for the final assessment"""
+    explanations = {
+        'VERIFIED_TRUE': "This content appears to be TRUE and has been verified against online sources with high confidence.",
+        'LIKELY_TRUE_VERIFIED': "This content appears to be TRUE and has been partially verified against online sources.",
+        'LIKELY_TRUE_NOT_VERIFIED': "This content appears to be TRUE based on ML analysis, but no matching online sources were found.",
+        'LIKELY_FAKE_NOT_FOUND': "This content appears to be FAKE based on ML analysis and was not found in reputable online sources.",
+        'CONFLICTING_HIGH_SIMILARITY': "⚠️ CONFLICT: ML models suggest FAKE, but content was found in reputable sources with high similarity.",
+        'CONFLICTING_MEDIUM_SIMILARITY': "⚠️ CONFLICT: ML models suggest FAKE, but similar content was found in online sources.",
+        'PARTIALLY_VERIFIED': "Content was found online but with low similarity - requires further investigation.",
+        'WEAK_VERIFICATION': "Content was found online but similarity is very low - likely not the same story.",
+        'UNKNOWN_NOT_VERIFIED': "Unable to determine credibility - no clear indicators found."
     }
     
-    df = pd.DataFrame(metrics_data)
-    st.dataframe(df, use_container_width=True)
-    
-    # Visualization
-    st.subheader("Accuracy Comparison")
-    import plotly.express as px
-    
-    fig = px.bar(df, x="Model", y="Accuracy", 
-                 title="Model Accuracy Comparison",
-                 color="Accuracy",
-                 color_continuous_scale="Viridis")
-    st.plotly_chart(fig, use_container_width=True)
+    return explanations.get(assessment, f"Assessment: {assessment}")
 
-def statistics_page():
-    """Statistics and insights page"""
-    st.header("📈 System Statistics")
+def main():
+    """Main application interface"""
+    st.markdown('<h1 class="main-header">🔍 Fake News Detection & Verification System</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Advanced ML Analysis + Online Source Verification</p>', unsafe_allow_html=True)
     
-    # Mock statistics
-    st.subheader("Usage Statistics")
+    # Load system components
+    if st.session_state.analyzer is None:
+        with st.spinner("⚡ Loading ML models and verification system..."):
+            start_time = time.time()
+            model_loader, predictor, preprocessor, success = load_system()
+            if success:
+                st.session_state.analyzer = model_loader
+                st.session_state.predictor = predictor
+                st.session_state.preprocessor = preprocessor
+                st.session_state.loading_time = time.time() - start_time
+                st.success(f"✅ System loaded in {st.session_state.loading_time:.1f}s - Ready for analysis!")
+            else:
+                st.error("❌ Failed to load system components")
+                return
     
-    col1, col2, col3, col4 = st.columns(4)
+    # Main input section
+    st.markdown("### 📝 Enter News Text for Analysis")
     
-    with col1:
-        st.metric("Total Analyses", "1,234", "56")
+    # Text input
+    text_input = st.text_area(
+        "Paste or type the news text you want to analyze:",
+        height=150,
+        placeholder="Enter news article text here...",
+        help="Minimum 10 characters. The system will analyze this text using ML models and optionally verify it against online sources."
+    )
     
-    with col2:
-        st.metric("Fake News Detected", "456", "23")
-    
-    with col3:
-        st.metric("True News Verified", "778", "33")
-    
-    with col4:
-        st.metric("Accuracy Rate", "89.2%", "2.1%")
-    
-    # Distribution charts
-    st.subheader("Prediction Distribution")
-    
-    import plotly.express as px
-    
-    # Mock data
-    distribution_data = {
-        "Category": ["True News", "Fake News", "Uncertain"],
-        "Count": [778, 456, 234],
-        "Percentage": [53.1, 31.1, 15.8]
-    }
-    
-    df_dist = pd.DataFrame(distribution_data)
-    
-    col1, col2 = st.columns(2)
+    # Options
+    col1, col2 = st.columns([1, 1])
     
     with col1:
-        fig_pie = px.pie(df_dist, values="Count", names="Category", 
-                        title="News Category Distribution")
-        st.plotly_chart(fig_pie, use_container_width=True)
+        enable_verification = st.checkbox(
+            "🔍 Enable Online Verification", 
+            value=True,
+            help="Search for this text in online news sources to verify authenticity"
+        )
     
     with col2:
-        fig_bar = px.bar(df_dist, x="Category", y="Count",
-                        title="Category Counts",
-                        color="Category")
-        st.plotly_chart(fig_bar, use_container_width=True)
+        show_preprocessing = st.checkbox(
+            "🔧 Show Text Preprocessing Steps",
+            value=False,
+            help="Display step-by-step text preprocessing"
+        )
     
-    # Model performance over time
-    st.subheader("Model Performance Trends")
+    # Analyze button
+    if st.button("🚀 Analyze Text", type="primary", use_container_width=True):
+        if not text_input or len(text_input.strip()) < 10:
+            st.warning("⚠️ Please enter at least 10 characters of text to analyze.")
+            return
+        
+        # Show preprocessing if requested
+        if show_preprocessing:
+            st.markdown("---")
+            st.subheader("🔧 Text Preprocessing")
+            
+            preprocessing_result = st.session_state.preprocessor.preprocess(text_input, show_steps=True)
+            stats = st.session_state.preprocessor.get_preprocessing_stats(text_input, preprocessing_result['processed'])
+            
+            # Display preprocessing steps
+            if preprocessing_result['steps']:
+                html_steps = st.session_state.preprocessor.display_preprocessing_steps(preprocessing_result['steps'])
+                st.markdown(html_steps, unsafe_allow_html=True)
+            
+            # Display stats
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Original Length", f"{stats['original_length']} chars")
+            with col2:
+                st.metric("Processed Length", f"{stats['processed_length']} chars")
+            with col3:
+                st.metric("Reduction", f"{stats['reduction_percentage']:.1f}%")
+        
+        # Perform analysis
+        with st.spinner("🔍 Analyzing text..."):
+            try:
+                # Get unified prediction and verification
+                results = st.session_state.predictor.predict_and_verify(
+                    text_input, 
+                    enable_verification=enable_verification
+                )
+                
+                ml_results = results['ml_prediction']
+                verification_result = results['verification'] if enable_verification else None
+                final_assessment = results['final_assessment']
+                
+                # Display results in two columns
+                col1, col2 = st.columns([1, 1])
+                
+                with col1:
+                    display_ml_predictions(ml_results)
+                
+                with col2:
+                    if enable_verification:
+                        display_verification_results(verification_result)
+                    else:
+                        st.info("ℹ️ Online verification disabled")
+                
+                # Display final assessment
+                display_final_assessment(final_assessment, ml_results, verification_result)
+                
+                # Store results in session state for potential export
+                st.session_state.last_results = results
+                
+            except Exception as e:
+                st.error(f"❌ Analysis failed: {e}")
     
-    # Mock time series data
-    import datetime
-    dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
-    performance_data = {
-        "Date": dates,
-        "SVM": np.random.normal(85, 2, 30),
-        "LSTM": np.random.normal(87, 2, 30),
-        "BERT": np.random.normal(89, 2, 30)
-    }
-    
-    df_perf = pd.DataFrame(performance_data)
-    
-    fig_line = px.line(df_perf, x="Date", y=["SVM", "LSTM", "BERT"],
-                      title="Model Accuracy Over Time")
-    st.plotly_chart(fig_line, use_container_width=True)
-
-def about_page():
-    """About page"""
-    st.header("ℹ️ About the System")
-    
-    st.markdown("""
-    ## 🔍 Fake News Detection System
-    
-    This system combines three different machine learning approaches to detect fake news with high accuracy:
-    
-    ### 🤖 Models Used
-    
-    1. **Support Vector Machine (SVM)**
-       - Uses TF-IDF features for text classification
-       - Fast inference and good performance on short texts
-       - Accuracy: 85%
-    
-    2. **Long Short-Term Memory (LSTM)**
-       - Neural network that captures sequential patterns
-       - Good at understanding context and relationships
-       - Accuracy: 87%
-    
-    3. **DistilBERT (Hybrid)**
-       - Pre-trained transformer model for feature extraction
-       - Custom logistic regression classifier
-       - Best overall performance: 89% accuracy
-    
-    ### 🔧 Technical Features
-    
-    - **Ensemble Prediction**: Combines all three models for robust results
-    - **Memory Optimization**: Efficient loading and processing
-    - **Real-time Analysis**: Fast predictions for user input
-    - **Confidence Scoring**: Provides reliability metrics
-    - **Credibility Analysis**: Advanced fact-checking capabilities
-    - **Verdict Agent**: AI-powered final decision making
-    
-    ### 📊 Performance Metrics
-    
-    - **Overall Accuracy**: 89.2%
-    - **Precision**: 87.3%
-    - **Recall**: 86.1%
-    - **F1-Score**: 86.7%
-    
-    ### 🚀 Deployment
-    
-    This system is deployed using:
-    - **Streamlit** for the user interface
-    - **Hugging Face Spaces** for hosting
-    - **Git LFS** for model storage
-    - **Memory-efficient loading** for optimal performance
-    
-    ### 📝 Usage Tips
-    
-    1. Enter complete news articles for best results
-    2. Use ensemble prediction for highest accuracy
-    3. Check confidence scores to assess reliability
-    4. Longer, more detailed articles tend to have better predictions
-    
-    ### 🔗 Resources
-    
-    - **GitHub Repository**: [Link to repo]
-    - **Documentation**: [Link to docs]
-    - **Model Details**: [Link to model info]
-    
-    ---
-    
-    **Developed with ❤️ for better information verification**
-    """)
-    
-    # Contact information
-    st.subheader("📧 Contact")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        **Technical Support**
-        - Email: support@fakenewsdetector.com
-        - GitHub Issues: [Report bugs here]
-        """)
-    
-    with col2:
-        st.markdown("""
-        **Contributions**
-        - Fork the repository
-        - Submit pull requests
-        - Report issues and suggestions
-        """)
+    # Real-time monitoring section
+    st.markdown("---")
+    with st.expander("📰 Real-Time News Monitoring", expanded=False):
+        st.markdown("### 🌐 Live News Feed Analysis")
+        st.info("💡 This feature allows you to monitor live news feeds and analyze their credibility in real-time.")
+        
+        # Check if NewsAPI is configured
+        try:
+            from config import config
+            if config.validate():
+                st.success("✅ NewsAPI configured - Real-time monitoring available")
+                
+                # Simple news fetching interface
+                col1, col2 = st.columns([1, 1])
+                
+                with col1:
+                    country = st.selectbox(
+                        "Select Country:",
+                        ['us', 'gb', 'ca', 'au', 'de', 'fr', 'in', 'jp'],
+                        index=0
+                    )
+                
+                with col2:
+                    category = st.selectbox(
+                        "Select Category:",
+                        ['general', 'business', 'technology', 'science', 'health', 'sports', 'entertainment'],
+                        index=0
+                    )
+                
+                if st.button("📡 Fetch Latest News", type="secondary"):
+                    with st.spinner("Fetching latest news..."):
+                        try:
+                            from news_fetcher import NewsFetcher
+                            fetcher = NewsFetcher()
+                            articles = fetcher.fetch_and_analyze(
+                                country=country,
+                                category=category,
+                                page_size=10
+                            )
+                            
+                            if articles:
+                                st.success(f"✅ Fetched {len(articles)} articles")
+                                
+                                for i, article in enumerate(articles[:5], 1):
+                                    credibility = article.get('credibility_score', 0)
+                                    prediction = article.get('prediction', 'UNKNOWN')
+                                    
+                                    if prediction == 'FAKE':
+                                        status_icon = "🚨"
+                                        status_color = "#ffebee"
+                                    elif prediction == 'TRUE':
+                                        status_icon = "✅"
+                                        status_color = "#e8f5e9"
+                                    else:
+                                        status_icon = "❓"
+                                        status_color = "#f5f5f5"
+                                    
+                                    st.markdown(f"""
+                                    <div style="background-color: {status_color}; padding: 1rem; border-radius: 0.5rem; margin: 0.5rem 0;">
+                                        <h5>{status_icon} {article.get('title', 'No title')}</h5>
+                                        <p><strong>Source:</strong> {article.get('source', {}).get('name', 'Unknown')}</p>
+                                        <p><strong>Prediction:</strong> {prediction} (Confidence: {credibility:.1%})</p>
+                                        <p>{article.get('description', 'No description')}</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            else:
+                                st.warning("No articles fetched")
+                                
+                        except Exception as e:
+                            st.error(f"Failed to fetch news: {e}")
+            else:
+                st.warning("⚠️ NewsAPI not configured. Please set NEWSAPI_KEY in your environment.")
+                st.code("""
+# To enable real-time monitoring:
+# 1. Get API key from https://newsapi.org/register
+# 2. Create .env file with:
+# NEWSAPI_KEY=your_api_key_here
+                """)
+                
+        except ImportError:
+            st.warning("⚠️ Real-time monitoring components not available")
 
 if __name__ == "__main__":
     main()

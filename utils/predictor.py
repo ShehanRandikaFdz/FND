@@ -6,6 +6,7 @@ Integrates all three models with credibility_analyzer and verdict_agent
 import re
 import numpy as np
 import torch
+import time
 from typing import Dict, List, Any, Optional
 import streamlit as st
 
@@ -303,6 +304,99 @@ class UnifiedPredictor:
                 "individual_results": {},
                 "error": str(e)
             }
+    
+    def predict_and_verify(self, text: str, enable_verification: bool = True) -> Dict:
+        """
+        Combined ML prediction and online verification
+        
+        Args:
+            text: Input text to analyze
+            enable_verification: Whether to enable online verification
+            
+        Returns:
+            Dictionary with ML predictions, verification results, and final assessment
+        """
+        try:
+            # Step 1: Get ML predictions from all models
+            ml_results = self.ensemble_predict_majority(text)
+            
+            # Step 2: Verify against online sources (if enabled)
+            verification_result = None
+            if enable_verification:
+                try:
+                    from utils.news_verifier import NewsVerifier
+                    verifier = NewsVerifier()
+                    verification_result = verifier.verify_news(text)
+                except Exception as e:
+                    st.warning(f"⚠️ Verification failed: {e}")
+                    verification_result = {
+                        'found_online': False,
+                        'error': str(e),
+                        'best_match': None,
+                        'similarity_score': 0,
+                        'all_matches': []
+                    }
+            
+            # Step 3: Combine results and assess credibility
+            final_assessment = self._assess_credibility(ml_results, verification_result)
+            
+            return {
+                'ml_prediction': ml_results,
+                'verification': verification_result,
+                'final_assessment': final_assessment,
+                'analysis_timestamp': time.time()
+            }
+            
+        except Exception as e:
+            return {
+                'ml_prediction': {'final_prediction': 'ERROR', 'error': str(e)},
+                'verification': {'found_online': False, 'error': str(e)},
+                'final_assessment': 'ERROR',
+                'error': str(e)
+            }
+    
+    def _assess_credibility(self, ml_results: Dict, verification: Optional[Dict]) -> str:
+        """
+        Assess credibility by combining ML predictions with verification results
+        
+        Args:
+            ml_results: Results from ML models
+            verification: Results from online verification
+            
+        Returns:
+            Final assessment string
+        """
+        if not verification:
+            # No verification available, use ML prediction
+            return ml_results.get('final_prediction', 'UNKNOWN')
+        
+        if verification.get('found_online', False):
+            similarity_score = verification.get('similarity_score', 0)
+            
+            # High similarity with online sources suggests truth
+            if similarity_score > 0.8:
+                if ml_results.get('final_prediction') == 'TRUE':
+                    return 'VERIFIED_TRUE'
+                else:
+                    return 'CONFLICTING_HIGH_SIMILARITY'
+            elif similarity_score > 0.6:
+                if ml_results.get('final_prediction') == 'TRUE':
+                    return 'LIKELY_TRUE_VERIFIED'
+                else:
+                    return 'CONFLICTING_MEDIUM_SIMILARITY'
+            elif similarity_score > 0.4:
+                return 'PARTIALLY_VERIFIED'
+            else:
+                return 'WEAK_VERIFICATION'
+        else:
+            # Not found online
+            ml_prediction = ml_results.get('final_prediction', 'UNKNOWN')
+            if ml_prediction == 'FAKE':
+                return 'LIKELY_FAKE_NOT_FOUND'
+            elif ml_prediction == 'TRUE':
+                return 'LIKELY_TRUE_NOT_VERIFIED'
+            else:
+                return 'UNKNOWN_NOT_VERIFIED'
 
     def get_credibility_analysis(self, text: str) -> Dict:
         """Get credibility analysis if available"""
