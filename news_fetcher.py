@@ -11,7 +11,7 @@ import hashlib
 from news_apis.newsapi_client import NewsAPIClient
 from utils.model_loader import ModelLoader
 from utils.predictor import UnifiedPredictor
-from config import config
+from config import Config
 
 
 class NewsFetcher:
@@ -19,15 +19,15 @@ class NewsFetcher:
     
     def __init__(self):
         """Initialize news fetcher with API client and analyzer"""
-        print("🔄 Initializing News Fetcher...")
+        print("Initializing News Fetcher...")
         
         # Validate configuration
-        if not config.validate():
-            raise ValueError("Invalid configuration! Please check your .env file.")
+        if not Config.NEWSAPI_KEY:
+            raise ValueError("NewsAPI key not configured! Please check your .env file.")
         
         # Initialize API client
-        print("📡 Connecting to NewsAPI...")
-        self.api_client = NewsAPIClient(api_key=config.NEWSAPI_KEY)
+        print("Connecting to NewsAPI...")
+        self.api_client = NewsAPIClient(api_key=Config.NEWSAPI_KEY)
         
         # Initialize ML components (lazy loading)
         self.model_loader = None
@@ -37,19 +37,19 @@ class NewsFetcher:
         self.seen_urls = set()
         self.seen_hashes = set()
         
-        print("✅ News Fetcher initialized successfully!\n")
+        print("News Fetcher initialized successfully!")
     
     def _load_ml_models(self):
         """Load ML models lazily"""
         if self.model_loader is None:
-            print("🤖 Loading ML models...")
+            print("Loading ML models...")
             self.model_loader = ModelLoader()
             self.model_loader.load_svm_model()
             self.model_loader.load_lstm_model()
             self.model_loader.load_bert_model()
             
             self.predictor = UnifiedPredictor(self.model_loader)
-            print("✅ ML models loaded!")
+            print("ML models loaded!")
     
     def fetch_and_analyze(
         self,
@@ -77,7 +77,7 @@ class NewsFetcher:
             self._load_ml_models()
             
             # Fetch articles from NewsAPI with pagination
-            print(f"📰 Fetching articles (page {page})...")
+            print(f"Fetching articles (page {page})...")
             if query:
                 articles = self.api_client.search_articles(
                     query=query,
@@ -93,7 +93,7 @@ class NewsFetcher:
                 )
             
             if not articles:
-                print("⚠️ No articles found")
+                print("No articles found")
                 return []
             
             # Analyze each article
@@ -104,14 +104,14 @@ class NewsFetcher:
                     if analyzed:
                         analyzed_articles.append(analyzed)
                 except Exception as e:
-                    print(f"❌ Error analyzing article: {e}")
+                    print(f"Error analyzing article: {e}")
                     continue
             
-            print(f"✅ Successfully analyzed {len(analyzed_articles)} articles")
+            print(f"Successfully analyzed {len(analyzed_articles)} articles")
             return analyzed_articles
             
         except Exception as e:
-            print(f"❌ Error fetching news: {e}")
+            print(f"Error fetching news: {e}")
             return []
     
     def _analyze_article(self, article: Dict) -> Optional[Dict]:
@@ -168,7 +168,7 @@ class NewsFetcher:
             }
             
         except Exception as e:
-            print(f"❌ Error analyzing article: {e}")
+            print(f"Error analyzing article: {e}")
             return None
     
     def search_and_analyze(

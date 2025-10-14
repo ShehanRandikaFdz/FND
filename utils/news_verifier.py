@@ -27,9 +27,9 @@ class NewsVerifier:
         if SEMANTIC_AVAILABLE:
             try:
                 self.similarity_model = SentenceTransformer('all-MiniLM-L6-v2')
-                print("✅ Semantic similarity model loaded")
+                print("Semantic similarity model loaded")
             except Exception as e:
-                print(f"⚠️ Failed to load semantic model: {e}")
+                print(f"Failed to load semantic model: {e}")
                 self.similarity_model = None
     
     def extract_keywords(self, text: str, max_keywords: int = 10) -> List[str]:
@@ -60,7 +60,7 @@ class NewsVerifier:
     def search_newsapi(self, query: str, page_size: int = 20) -> List[Dict]:
         """Search NewsAPI for articles matching the query"""
         if not self.newsapi_key:
-            print("⚠️ NewsAPI key not configured")
+            print("NewsAPI key not configured")
             return []
         
         try:
@@ -82,7 +82,7 @@ class NewsVerifier:
             return articles
             
         except Exception as e:
-            print(f"❌ NewsAPI search failed: {e}")
+            print(f"NewsAPI search failed: {e}")
             return []
     
     def calculate_similarity(self, text1: str, text2: str) -> float:
@@ -97,7 +97,7 @@ class NewsVerifier:
             similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
             return float(similarity)
         except Exception as e:
-            print(f"⚠️ Semantic similarity failed: {e}")
+            print(f"Semantic similarity failed: {e}")
             return self._keyword_similarity(text1, text2)
     
     def _keyword_similarity(self, text1: str, text2: str) -> float:

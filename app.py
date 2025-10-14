@@ -224,20 +224,47 @@ def generate_explanation(ml_result, news_api_results):
     confidence = ml_result.get('confidence', 0)
     
     # Check if NewsAPI found matching articles
-    if news_api_results.get('found'):
+    if news_api_results.get('found_online') and news_api_results.get('articles'):
         articles = news_api_results.get('articles', [])
-        if articles:
-            best_match = articles[0]
-            similarity = best_match.get('similarity_score', 0)
-            return f"Found {len(articles)} matching article(s) in trusted sources. Best match: '{best_match.get('title', 'Unknown')}' from {best_match.get('source', 'Unknown source')} with {similarity:.1%} similarity."
+        best_match = news_api_results.get('best_match', {})
+        similarity = best_match.get('similarity_score', 0)
+        
+        # Create detailed explanation with found articles
+        explanation_parts = []
+        
+        # Main verification result
+        explanation_parts.append(f"✅ ONLINE VERIFICATION: Found {len(articles)} similar article(s) from trusted sources.")
+        
+        # Best match details
+        if best_match:
+            title = best_match.get('title', 'Unknown Title')
+            source = best_match.get('source', {}).get('name', 'Unknown Source')
+            published_at = best_match.get('publishedAt', 'Unknown Date')
+            url = best_match.get('url', '#')
+            
+            explanation_parts.append(f"📰 BEST MATCH: '{title}'")
+            explanation_parts.append(f"🏢 SOURCE: {source}")
+            explanation_parts.append(f"📅 PUBLISHED: {published_at}")
+            explanation_parts.append(f"🎯 SIMILARITY: {similarity:.1%}")
+            explanation_parts.append(f"🔗 READ MORE: {url}")
+        
+        # Additional articles if any
+        if len(articles) > 1:
+            explanation_parts.append(f"\n📚 OTHER MATCHES ({len(articles)-1} more):")
+            for i, article in enumerate(articles[1:3], 1):  # Show up to 2 additional articles
+                article_title = article.get('title', 'Unknown Title')
+                article_source = article.get('source', {}).get('name', 'Unknown Source')
+                explanation_parts.append(f"  {i}. {article_title} ({article_source})")
+        
+        return "\n".join(explanation_parts)
     
     # Fallback to ML-based explanation
     if prediction == 'FAKE':
-        return f"Analysis indicates a high probability of misinformation (confidence: {confidence}%). Text patterns suggest sensationalism or lack of factual basis."
+        return f"❌ ANALYSIS RESULT: High probability of misinformation (confidence: {confidence}%).\n\nText patterns suggest sensationalism or lack of factual basis. No matching articles found in trusted sources."
     elif prediction == 'TRUE':
-        return f"Analysis indicates high probability of credible content (confidence: {confidence}%). Text patterns are consistent with factual reporting."
+        return f"✅ ANALYSIS RESULT: High probability of credible content (confidence: {confidence}%).\n\nText patterns are consistent with factual reporting. No matching articles found in trusted sources for verification."
     else:
-        return f"Analysis is inconclusive (confidence: {confidence}%). Additional verification may be needed."
+        return f"⚠️ ANALYSIS RESULT: Inconclusive (confidence: {confidence}%).\n\nAdditional verification may be needed. No matching articles found in trusted sources."
 
 if __name__ == '__main__':
     print("Starting Flask Fake News Detector...")

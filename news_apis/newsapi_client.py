@@ -47,7 +47,7 @@ class NewsAPIClient:
             return data.get('articles', [])
             
         except Exception as e:
-            print(f"❌ Error fetching top headlines: {e}")
+            print(f"Error fetching top headlines: {e}")
             return []
     
     def search_everything(
@@ -74,7 +74,7 @@ class NewsAPIClient:
             return data.get('articles', [])
             
         except Exception as e:
-            print(f"❌ Error searching articles: {e}")
+            print(f"Error searching articles: {e}")
             return []
     
     def get_everything(

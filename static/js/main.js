@@ -254,54 +254,114 @@ function updateExplanation(result) {
     let html = '';
     
     // Check if NewsAPI found articles
-    if (result.news_api_results && result.news_api_results.found && result.news_api_results.articles) {
-        const articles = result.news_api_results.articles;
+    if (result.news_api_results && result.news_api_results.found_online && result.news_api_results.all_matches) {
+        const articles = result.news_api_results.all_matches;
+        const bestMatch = result.news_api_results.best_match;
         
-        html += '<div class="mb-4">';
-        html += '<h4 class="font-semibold text-green-600 dark:text-green-400 mb-2">✅ Found in Online Sources:</h4>';
-        html += '<div class="space-y-3">';
+        html += '<div class="mb-6">';
+        html += '<div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">';
+        html += '<h4 class="font-semibold text-green-700 dark:text-green-300 mb-3 flex items-center">';
+        html += '<span class="mr-2">✅</span> Online Verification Found';
+        html += '</h4>';
         
-        articles.slice(0, 3).forEach(article => {
-            const similarity = Math.round((article.similarity_score || 0) * 100);
-            html += `
-                <div class="border-l-4 border-primary pl-3 py-2">
-                    <p class="font-semibold text-sm">${article.title || 'Unknown Title'}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                        <strong>Source:</strong> ${article.source || 'Unknown'} | 
-                        <strong>Similarity:</strong> ${similarity}%
-                    </p>
-                    ${article.url ? `<a href="${article.url}" target="_blank" class="text-primary hover:underline text-xs">Read original →</a>` : ''}
-                </div>
-            `;
-        });
+        // Best match article
+        if (bestMatch) {
+            const similarity = Math.round((bestMatch.similarity_score || 0) * 100);
+            const publishedDate = bestMatch.publishedAt ? new Date(bestMatch.publishedAt).toLocaleDateString() : 'Unknown Date';
+            
+            html += '<div class="bg-white dark:bg-gray-800 rounded-lg p-4 mb-3 border border-green-200 dark:border-green-700">';
+            html += '<div class="flex items-start justify-between mb-2">';
+            html += '<h5 class="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">📰 Best Match</h5>';
+            html += `<span class="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-xs font-medium">${similarity}% Similar</span>`;
+            html += '</div>';
+            html += `<p class="font-medium text-gray-800 dark:text-gray-200 mb-2">${bestMatch.title || 'Unknown Title'}</p>`;
+            html += '<div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">';
+            html += `<p><strong>🏢 Source:</strong> ${bestMatch.source?.name || 'Unknown Source'}</p>`;
+            html += `<p><strong>📅 Published:</strong> ${publishedDate}</p>`;
+            if (bestMatch.url) {
+                html += `<p><strong>🔗 Link:</strong> <a href="${bestMatch.url}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Read Original Article →</a></p>`;
+            }
+            html += '</div>';
+            html += '</div>';
+        }
+        
+        // Additional articles
+        if (articles.length > 1) {
+            html += '<div class="mt-3">';
+            html += `<h6 class="font-medium text-gray-700 dark:text-gray-300 mb-2">📚 Other Matches (${articles.length - 1} more):</h6>`;
+            html += '<div class="space-y-2">';
+            
+            articles.slice(1, 4).forEach((article, index) => {
+                const similarity = Math.round((article.similarity_score || 0) * 100);
+                html += `
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded p-3 border-l-4 border-blue-400">
+                        <p class="font-medium text-sm text-gray-800 dark:text-gray-200 mb-1">${article.title || 'Unknown Title'}</p>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">${article.source?.name || 'Unknown Source'}</span>
+                            <span class="mx-2">•</span>
+                            <span>${similarity}% similar</span>
+                            ${article.url ? `<span class="mx-2">•</span><a href="${article.url}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Read →</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            html += '</div>';
+        }
         
         html += '</div>';
         html += '</div>';
     } else {
         // Show warning if no online sources found
         html += `
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded mb-4">
-                <p class="text-yellow-800 dark:text-yellow-200 text-sm">
-                    ⚠️ No matching articles found in trusted online sources.
-                </p>
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+                <div class="flex items-center">
+                    <span class="mr-2">⚠️</span>
+                    <p class="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
+                        No matching articles found in trusted online sources for verification.
+                    </p>
+                </div>
             </div>
         `;
     }
     
-    // Add ML explanation
+    // Add ML explanation (formatted)
     if (result.explanation) {
-        html += `<p class="text-sm">${result.explanation}</p>`;
+        // Format the explanation with proper line breaks and styling
+        const formattedExplanation = result.explanation
+            .replace(/\n/g, '<br>')
+            .replace(/✅/g, '<span class="text-green-600 dark:text-green-400">✅</span>')
+            .replace(/❌/g, '<span class="text-red-600 dark:text-red-400">❌</span>')
+            .replace(/⚠️/g, '<span class="text-yellow-600 dark:text-yellow-400">⚠️</span>')
+            .replace(/📰/g, '<span class="text-blue-600 dark:text-blue-400">📰</span>')
+            .replace(/🏢/g, '<span class="text-purple-600 dark:text-purple-400">🏢</span>')
+            .replace(/📅/g, '<span class="text-indigo-600 dark:text-indigo-400">📅</span>')
+            .replace(/🎯/g, '<span class="text-pink-600 dark:text-pink-400">🎯</span>')
+            .replace(/🔗/g, '<span class="text-cyan-600 dark:text-cyan-400">🔗</span>')
+            .replace(/📚/g, '<span class="text-orange-600 dark:text-orange-400">📚</span>');
+        
+        html += '<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">';
+        html += '<h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🤖 AI Analysis Result:</h5>';
+        html += `<div class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">${formattedExplanation}</div>`;
+        html += '</div>';
     } else {
+        // Fallback explanation
         const prediction = result.prediction;
         const confidence = Math.round(result.confidence);
         
+        html += '<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">';
+        html += '<h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🤖 AI Analysis Result:</h5>';
+        
         if (prediction === 'FAKE') {
-            html += `<p class="text-sm">Analysis indicates high probability of misinformation (confidence: ${confidence}%). Patterns detected are commonly found in fabricated or satirical content.</p>`;
+            html += `<p class="text-sm text-red-600 dark:text-red-400">❌ High probability of misinformation (confidence: ${confidence}%). Patterns detected are commonly found in fabricated or satirical content.</p>`;
         } else if (prediction === 'TRUE') {
-            html += `<p class="text-sm">Analysis indicates high probability of credible content (confidence: ${confidence}%). Text patterns are consistent with factual reporting.</p>`;
+            html += `<p class="text-sm text-green-600 dark:text-green-400">✅ High probability of credible content (confidence: ${confidence}%). Text patterns are consistent with factual reporting.</p>`;
         } else {
-            html += `<p class="text-sm">Analysis is inconclusive (confidence: ${confidence}%). Additional verification may be needed.</p>`;
+            html += `<p class="text-sm text-yellow-600 dark:text-yellow-400">⚠️ Analysis is inconclusive (confidence: ${confidence}%). Additional verification may be needed.</p>`;
         }
+        
+        html += '</div>';
     }
     
     explanationEl.innerHTML = html;
