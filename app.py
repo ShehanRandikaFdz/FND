@@ -104,6 +104,97 @@ def add_to_history(result):
     session['history'].append(result)
     session.modified = True
 
+def extract_article_content(url):
+    """Extract article content from URL using requests and BeautifulSoup"""
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+        import re
+        
+        # Set headers to mimic a real browser
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        # Make request to URL
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        # Parse HTML content
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Remove script and style elements
+        for script in soup(["script", "style"]):
+            script.decompose()
+        
+        # Try to find article title
+        title = None
+        title_selectors = [
+            'h1', 'title', '[class*="title"]', '[class*="headline"]',
+            'meta[property="og:title"]', 'meta[name="title"]'
+        ]
+        
+        for selector in title_selectors:
+            if selector.startswith('meta'):
+                meta_tag = soup.select_one(selector)
+                if meta_tag and meta_tag.get('content'):
+                    title = meta_tag.get('content').strip()
+                    break
+            else:
+                title_elem = soup.select_one(selector)
+                if title_elem and title_elem.get_text().strip():
+                    title = title_elem.get_text().strip()
+                    break
+        
+        # Try to find article content
+        content = None
+        content_selectors = [
+            'article', '[class*="article"]', '[class*="content"]', '[class*="post"]',
+            '[class*="story"]', 'main', '.entry-content', '.post-content'
+        ]
+        
+        for selector in content_selectors:
+            content_elem = soup.select_one(selector)
+            if content_elem:
+                # Get all paragraphs
+                paragraphs = content_elem.find_all(['p', 'div'])
+                if paragraphs:
+                    content = ' '.join([p.get_text().strip() for p in paragraphs if p.get_text().strip()])
+                    break
+        
+        # Fallback: get all paragraph text
+        if not content:
+            paragraphs = soup.find_all('p')
+            if paragraphs:
+                content = ' '.join([p.get_text().strip() for p in paragraphs if p.get_text().strip()])
+        
+        # Clean up content
+        if content:
+            # Remove extra whitespace
+            content = re.sub(r'\s+', ' ', content).strip()
+            # Remove very short sentences (likely navigation/ads)
+            sentences = content.split('.')
+            content = '. '.join([s.strip() for s in sentences if len(s.strip()) > 20])
+        
+        # Extract source/domain
+        from urllib.parse import urlparse
+        domain = urlparse(url).netloc
+        source = domain.replace('www.', '').split('.')[0].title()
+        
+        if not content or len(content) < 50:
+            return None
+        
+        return {
+            'title': title or 'Unknown Title',
+            'text': content,
+            'source': source,
+            'url': url
+        }
+        
+    except Exception as e:
+        print(f"Error extracting content from {url}: {e}")
+        return None
+
 @app.route('/')
 def index():
     """Serve the main HTML page"""
@@ -157,6 +248,70 @@ def analyze():
         
     except Exception as e:
         print(f"Error in analyze: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/analyze-url', methods=['POST'])
+def analyze_url():
+    """Analyze news article from URL for fake news detection"""
+    try:
+        print("=== ANALYZE URL REQUEST START ===")
+        data = request.get_json()
+        url = data.get('url', '').strip()
+        print(f"URL to analyze: {url}")
+
+        if not url:
+            print("No URL provided")
+            return jsonify({'error': 'No URL provided'}), 400
+
+        if not predictor:
+            return jsonify({'error': 'ML models not loaded'}), 500
+        
+        # Extract content from URL
+        try:
+            article_content = extract_article_content(url)
+            if not article_content:
+                return jsonify({'error': 'Could not extract content from URL'}), 400
+        except Exception as e:
+            return jsonify({'error': f'Failed to extract content: {str(e)}'}), 400
+        
+        # Get ML prediction on extracted content
+        ml_result = predictor.ensemble_predict_majority(article_content['text'])
+        
+        # Get NewsAPI verification if available
+        news_api_results = {'found': False, 'articles': [], 'error': None}
+        if news_verifier:
+            try:
+                news_api_results = news_verifier.verify_news(article_content['text'])
+            except Exception as e:
+                news_api_results['error'] = str(e)
+        
+        # Generate explanation
+        explanation = generate_explanation(ml_result, news_api_results)
+        
+        # Build response with JSON-safe types
+        response = {
+            'prediction': ml_result.get('final_prediction', 'UNKNOWN'),
+            'confidence': ml_result.get('confidence', 0),
+            'news_api_results': news_api_results,
+            'individual_results': ml_result.get('individual_results', {}),
+            'timestamp': datetime.now().isoformat(),
+            'url': url,
+            'article_title': article_content.get('title', 'Unknown Title'),
+            'article_source': article_content.get('source', 'Unknown Source'),
+            'article_text': article_content['text'][:200] + '...' if len(article_content['text']) > 200 else article_content['text'],
+            'explanation': explanation
+        }
+        
+        # Make entire response JSON-safe
+        response = _make_json_safe(response)
+        
+        # Store in history
+        add_to_history(response)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        print(f"Error in analyze_url: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/fetch-news', methods=['POST'])

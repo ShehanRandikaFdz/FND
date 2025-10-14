@@ -18,6 +18,10 @@ newsapi-python==0.2.7
 requests>=2.31.0
 python-dotenv>=1.0.0
 
+# Web Scraping for URL Analysis
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
 # NLP & Similarity
 sentence-transformers>=2.2.0
 

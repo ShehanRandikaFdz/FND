@@ -46,6 +46,12 @@ function setupEventListeners() {
         clearBtn.addEventListener('click', clearHistory);
     }
     
+    // Analyze URL button
+    const analyzeUrlBtn = document.getElementById('analyze-url-btn');
+    if (analyzeUrlBtn) {
+        analyzeUrlBtn.addEventListener('click', analyzeUrl);
+    }
+    
     // Enter key in textarea
     const textarea = document.getElementById('news-text');
     if (textarea) {
@@ -130,6 +136,61 @@ async function checkCredibility() {
     }
 }
 
+async function analyzeUrl() {
+    const urlInput = document.getElementById('news-url');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        showError('Please enter a URL to analyze.');
+        return;
+    }
+    
+    // Basic URL validation
+    try {
+        new URL(url);
+    } catch (e) {
+        showError('Please enter a valid URL.');
+        return;
+    }
+    
+    if (isAnalyzing) {
+        return; // Prevent multiple simultaneous requests
+    }
+    
+    isAnalyzing = true;
+    updateAnalyzingUI(true);
+    
+    try {
+        console.log('🔗 Analyzing URL...');
+        
+        const response = await fetch('/analyze-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: url })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ URL analysis complete:', result);
+        
+        // Update UI with results
+        updateUI(result);
+        updateHistory();
+        
+    } catch (error) {
+        console.error('❌ Error analyzing URL:', error);
+        showError('Failed to analyze URL. Please try again.');
+    } finally {
+        isAnalyzing = false;
+        updateAnalyzingUI(false);
+    }
+}
+
 async function fetchLatestNews() {
     const fetchBtn = document.getElementById('fetch-news-btn');
     const originalText = fetchBtn.textContent;
@@ -208,6 +269,11 @@ function updateUI(result) {
     
     // Update source info (if available)
     updateSourceInfo(result);
+    
+    // Update URL-specific info (if analyzing URL)
+    if (result.url) {
+        updateUrlInfo(result);
+    }
 }
 
 function updateStatus(prediction, confidence) {
@@ -379,6 +445,33 @@ function updateSourceInfo(result) {
     if (urlEl) {
         urlEl.textContent = 'N/A';
         urlEl.href = '#';
+    }
+}
+
+function updateUrlInfo(result) {
+    // Update source info with URL analysis results
+    const sourceEl = document.getElementById('source');
+    const publishedEl = document.getElementById('published');
+    const urlEl = document.getElementById('url');
+    
+    if (sourceEl && result.article_source) {
+        sourceEl.textContent = result.article_source;
+    }
+    
+    if (publishedEl) {
+        publishedEl.textContent = new Date().toLocaleDateString();
+    }
+    
+    if (urlEl && result.url) {
+        urlEl.textContent = 'View Original';
+        urlEl.href = result.url;
+        urlEl.target = '_blank';
+    }
+    
+    // Show article title if available
+    if (result.article_title && result.article_title !== 'Unknown Title') {
+        // You could add a title display element here if needed
+        console.log('📰 Article Title:', result.article_title);
     }
 }
 
