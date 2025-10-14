@@ -1,284 +1,202 @@
 """
-News Verification Module
-Handles automatic verification of entered text against online news sources using NewsAPI
+News Verifier for Flask Application
+Verifies news against online sources using NewsAPI and semantic similarity
 """
 
+import os
 import re
-import time
 from typing import Dict, List, Optional, Tuple
-from collections import Counter
-import streamlit as st
+import requests
+from config import Config
 
 try:
     from sentence_transformers import SentenceTransformer
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.metrics.pairwise import cosine_similarity
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
+    SEMANTIC_AVAILABLE = True
 except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    st.warning("sentence-transformers not available. Using basic keyword matching only.")
-
-try:
-    from news_apis.newsapi_client import NewsAPIClient
-    NEWSAPI_AVAILABLE = True
-except ImportError:
-    NEWSAPI_AVAILABLE = False
-    st.warning("NewsAPI client not available. Verification will be disabled.")
-
+    SEMANTIC_AVAILABLE = False
+    print("sentence-transformers not available - using keyword matching only")
 
 class NewsVerifier:
-    """
-    Verifies entered text against online news sources using NewsAPI
-    Uses two-stage matching: keyword filtering (fast) + semantic similarity (accurate)
-    """
+    """Verify news articles against online sources"""
     
-    def __init__(self, api_key: Optional[str] = None):
-        """Initialize NewsVerifier with API client and similarity models"""
-        self.api_client = None
+    def __init__(self):
+        self.newsapi_key = Config.NEWSAPI_KEY
         self.similarity_model = None
-        self.tfidf_vectorizer = None
         
-        # Initialize API client if available
-        if NEWSAPI_AVAILABLE:
+        # Initialize semantic similarity model if available
+        if SEMANTIC_AVAILABLE:
             try:
-                self.api_client = NewsAPIClient(api_key=api_key)
-                st.success("✅ NewsAPI client initialized")
-            except Exception as e:
-                st.warning(f"⚠️ NewsAPI client initialization failed: {e}")
-        
-        # Initialize similarity models if available
-        if SENTENCE_TRANSFORMERS_AVAILABLE:
-            try:
-                # Use lightweight model for better performance
                 self.similarity_model = SentenceTransformer('all-MiniLM-L6-v2')
-                self.tfidf_vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
-                st.success("✅ Semantic similarity models loaded")
+                print("✅ Semantic similarity model loaded")
             except Exception as e:
-                st.warning(f"⚠️ Semantic similarity models failed to load: {e}")
+                print(f"⚠️ Failed to load semantic model: {e}")
+                self.similarity_model = None
     
-    def _extract_keywords(self, text: str, max_keywords: int = 10) -> List[str]:
-        """Extract important keywords from text for NewsAPI search"""
-        # Clean text
-        clean_text = re.sub(r'[^\w\s]', ' ', text.lower())
-        words = clean_text.split()
+    def extract_keywords(self, text: str, max_keywords: int = 10) -> List[str]:
+        """Extract key terms from text for searching"""
+        if not text:
+            return []
         
-        # Remove common stop words
+        # Clean text
+        text = re.sub(r'[^\w\s]', ' ', text.lower())
+        words = text.split()
+        
+        # Filter out common stop words
         stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 
-            'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 
-            'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 
-            'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 
-            'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those'
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+            'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did',
+            'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+            'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'
         }
         
-        # Filter out stop words and short words
-        filtered_words = [w for w in words if len(w) > 2 and w not in stop_words]
+        # Extract meaningful words (longer than 3 characters, not stop words)
+        keywords = [word for word in words if len(word) > 3 and word not in stop_words]
         
-        # Count word frequency and return most common
-        word_counts = Counter(filtered_words)
-        return [word for word, count in word_counts.most_common(max_keywords)]
+        # Return most frequent keywords
+        from collections import Counter
+        keyword_counts = Counter(keywords)
+        return [word for word, count in keyword_counts.most_common(max_keywords)]
     
-    def _search_news(self, keywords: List[str], max_articles: int = 50) -> List[Dict]:
-        """Search NewsAPI using extracted keywords"""
-        if not self.api_client:
+    def search_newsapi(self, query: str, page_size: int = 20) -> List[Dict]:
+        """Search NewsAPI for articles matching the query"""
+        if not self.newsapi_key:
+            print("⚠️ NewsAPI key not configured")
             return []
         
         try:
-            # Combine keywords for search query
-            query = ' '.join(keywords[:5])  # Use top 5 keywords to avoid query too long
+            url = "https://newsapi.org/v2/everything"
+            params = {
+                'q': query,
+                'apiKey': self.newsapi_key,
+                'pageSize': page_size,
+                'sortBy': 'relevancy',
+                'language': 'en'
+            }
             
-            # Search for articles
-            articles = self.api_client.search_everything(
-                query=query,
-                page_size=max_articles,
-                sort_by='relevancy'
-            )
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
             
-            st.info(f"🔍 Searched for: '{query}' - Found {len(articles)} articles")
+            data = response.json()
+            articles = data.get('articles', [])
+            
             return articles
             
         except Exception as e:
-            st.error(f"❌ NewsAPI search failed: {e}")
+            print(f"❌ NewsAPI search failed: {e}")
             return []
     
-    def _keyword_match(self, entered_text: str, articles: List[Dict], threshold: float = 0.3) -> List[Dict]:
-        """Fast keyword-based filtering to narrow down articles"""
-        if not articles:
-            return []
+    def calculate_similarity(self, text1: str, text2: str) -> float:
+        """Calculate semantic similarity between two texts"""
+        if not self.similarity_model:
+            # Fallback to simple keyword overlap
+            return self._keyword_similarity(text1, text2)
         
-        # Extract keywords from entered text
-        entered_keywords = set(self._extract_keywords(entered_text, max_keywords=15))
+        try:
+            embeddings = self.similarity_model.encode([text1, text2])
+            from sklearn.metrics.pairwise import cosine_similarity
+            similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+            return float(similarity)
+        except Exception as e:
+            print(f"⚠️ Semantic similarity failed: {e}")
+            return self._keyword_similarity(text1, text2)
+    
+    def _keyword_similarity(self, text1: str, text2: str) -> float:
+        """Calculate similarity based on keyword overlap"""
+        keywords1 = set(self.extract_keywords(text1))
+        keywords2 = set(self.extract_keywords(text2))
         
-        scored_articles = []
+        if not keywords1 or not keywords2:
+            return 0.0
+        
+        intersection = keywords1.intersection(keywords2)
+        union = keywords1.union(keywords2)
+        
+        return len(intersection) / len(union) if union else 0.0
+    
+    def find_matching_articles(self, input_text: str, articles: List[Dict]) -> List[Dict]:
+        """Find articles that match the input text"""
+        matches = []
         
         for article in articles:
-            # Combine title and description for matching
-            article_text = f"{article.get('title', '')} {article.get('description', '')}"
-            article_keywords = set(self._extract_keywords(article_text, max_keywords=15))
+            title = article.get('title', '')
+            description = article.get('description', '')
+            content = article.get('content', '')
             
-            # Calculate keyword overlap
-            if entered_keywords and article_keywords:
-                overlap = len(entered_keywords.intersection(article_keywords))
-                keyword_score = overlap / len(entered_keywords.union(article_keywords))
-                
-                if keyword_score >= threshold:
-                    article['keyword_score'] = keyword_score
-                    scored_articles.append(article)
+            # Combine article text
+            article_text = f"{title} {description} {content}".strip()
+            
+            if not article_text:
+                continue
+            
+            # Calculate similarity
+            similarity = self.calculate_similarity(input_text, article_text)
+            
+            if similarity > 0.3:  # Minimum similarity threshold
+                article['similarity_score'] = similarity
+                matches.append(article)
         
-        # Sort by keyword score and return top matches
-        scored_articles.sort(key=lambda x: x['keyword_score'], reverse=True)
-        return scored_articles[:20]  # Return top 20 for semantic analysis
-    
-    def _semantic_similarity(self, entered_text: str, articles: List[Dict]) -> List[Dict]:
-        """Calculate semantic similarity between entered text and articles"""
-        if not articles or not self.similarity_model:
-            return []
-        
-        try:
-            # Prepare texts for comparison
-            entered_clean = self._preprocess_for_similarity(entered_text)
-            article_texts = []
-            
-            for article in articles:
-                article_text = f"{article.get('title', '')} {article.get('description', '')}"
-                article_texts.append(self._preprocess_for_similarity(article_text))
-            
-            # Calculate embeddings
-            entered_embedding = self.similarity_model.encode([entered_clean])
-            article_embeddings = self.similarity_model.encode(article_texts)
-            
-            # Calculate cosine similarity
-            similarities = cosine_similarity(entered_embedding, article_embeddings)[0]
-            
-            # Add similarity scores to articles
-            for i, article in enumerate(articles):
-                article['similarity_score'] = float(similarities[i])
-            
-            # Filter by similarity threshold and sort
-            filtered_articles = [a for a in articles if a['similarity_score'] > 0.4]
-            filtered_articles.sort(key=lambda x: x['similarity_score'], reverse=True)
-            
-            return filtered_articles[:5]  # Return top 5 matches
-            
-        except Exception as e:
-            st.warning(f"⚠️ Semantic similarity calculation failed: {e}")
-            return []
-    
-    def _preprocess_for_similarity(self, text: str) -> str:
-        """Preprocess text for semantic similarity calculation"""
-        if not text:
-            return ""
-        
-        # Basic cleaning
-        text = re.sub(r'http\S+|www\S+', '', text, flags=re.MULTILINE)
-        text = re.sub(r'[^\w\s]', ' ', text)
-        text = re.sub(r'\s+', ' ', text).strip()
-        
-        return text[:500]  # Limit length for better performance
+        # Sort by similarity score
+        matches.sort(key=lambda x: x['similarity_score'], reverse=True)
+        return matches
     
     def verify_news(self, text: str) -> Dict:
-        """
-        Main verification pipeline:
-        1. Extract keywords from entered text
-        2. Search NewsAPI
-        3. Stage 1: Keyword filtering (fast)
-        4. Stage 2: Semantic similarity on top matches (accurate)
-        """
-        if not self.api_client:
-            return {
-                'found_online': False,
-                'error': 'NewsAPI client not available',
-                'best_match': None,
-                'similarity_score': 0,
-                'all_matches': []
-            }
-        
-        if not text or len(text.strip()) < 10:
-            return {
-                'found_online': False,
-                'error': 'Text too short for verification',
-                'best_match': None,
-                'similarity_score': 0,
-                'all_matches': []
-            }
-        
+        """Verify news text against online sources"""
         try:
-            with st.spinner("🔍 Verifying against online sources..."):
-                # Step 1: Extract keywords
-                keywords = self._extract_keywords(text)
-                st.info(f"📝 Extracted keywords: {', '.join(keywords[:5])}")
+            # Extract keywords for searching
+            keywords = self.extract_keywords(text)
+            
+            if not keywords:
+                return {
+                    'found_online': False,
+                    'error': 'No keywords extracted from text',
+                    'best_match': None,
+                    'similarity_score': 0,
+                    'all_matches': []
+                }
+            
+            # Create search query from top keywords
+            query = ' '.join(keywords[:5])
+            
+            # Search NewsAPI
+            articles = self.search_newsapi(query)
+            
+            if not articles:
+                return {
+                    'found_online': False,
+                    'error': 'No articles found in NewsAPI',
+                    'best_match': None,
+                    'similarity_score': 0,
+                    'all_matches': []
+                }
+            
+            # Find matching articles
+            matches = self.find_matching_articles(text, articles)
+            
+            if matches:
+                best_match = matches[0]
+                return {
+                    'found_online': True,
+                    'best_match': best_match,
+                    'similarity_score': best_match['similarity_score'],
+                    'all_matches': matches[:5],  # Top 5 matches
+                    'total_matches': len(matches),
+                    'search_query': query
+                }
+            else:
+                return {
+                    'found_online': False,
+                    'error': 'No similar articles found',
+                    'best_match': None,
+                    'similarity_score': 0,
+                    'all_matches': [],
+                    'search_query': query
+                }
                 
-                # Step 2: Search NewsAPI
-                articles = self._search_news(keywords)
-                
-                if not articles:
-                    return {
-                        'found_online': False,
-                        'error': 'No articles found in search',
-                        'best_match': None,
-                        'similarity_score': 0,
-                        'all_matches': []
-                    }
-                
-                # Step 3: Keyword filtering
-                keyword_matches = self._keyword_match(text, articles, threshold=0.2)
-                st.info(f"🎯 Keyword matches: {len(keyword_matches)} articles")
-                
-                # Step 4: Semantic similarity
-                if keyword_matches and self.similarity_model:
-                    semantic_matches = self._semantic_similarity(text, keyword_matches)
-                    st.info(f"🧠 Semantic matches: {len(semantic_matches)} articles")
-                else:
-                    # Fallback to keyword matches if semantic model not available
-                    semantic_matches = keyword_matches[:3]
-                    for article in semantic_matches:
-                        article['similarity_score'] = article.get('keyword_score', 0)
-                
-                # Return results
-                if semantic_matches:
-                    best_match = semantic_matches[0]
-                    return {
-                        'found_online': True,
-                        'best_match': best_match,
-                        'similarity_score': best_match['similarity_score'],
-                        'all_matches': semantic_matches,
-                        'search_keywords': keywords[:5],
-                        'total_articles_found': len(articles)
-                    }
-                else:
-                    return {
-                        'found_online': False,
-                        'error': 'No similar articles found',
-                        'best_match': None,
-                        'similarity_score': 0,
-                        'all_matches': [],
-                        'search_keywords': keywords[:5],
-                        'total_articles_found': len(articles)
-                    }
-        
         except Exception as e:
-            st.error(f"❌ Verification failed: {e}")
             return {
                 'found_online': False,
-                'error': f'Verification error: {str(e)}',
+                'error': str(e),
                 'best_match': None,
                 'similarity_score': 0,
                 'all_matches': []
             }
-    
-    def get_verification_summary(self, verification_result: Dict) -> str:
-        """Generate a human-readable summary of verification results"""
-        if not verification_result.get('found_online', False):
-            return "❌ **Not found online** - No matching articles detected"
-        
-        similarity = verification_result.get('similarity_score', 0)
-        best_match = verification_result.get('best_match', {})
-        
-        if similarity > 0.8:
-            return f"✅ **Highly verified** - Found matching article from {best_match.get('source', {}).get('name', 'Unknown')} (Similarity: {similarity:.1%})"
-        elif similarity > 0.6:
-            return f"✅ **Likely verified** - Found similar article from {best_match.get('source', {}).get('name', 'Unknown')} (Similarity: {similarity:.1%})"
-        elif similarity > 0.4:
-            return f"⚠️ **Partially verified** - Found related article from {best_match.get('source', {}).get('name', 'Unknown')} (Similarity: {similarity:.1%})"
-        else:
-            return f"❓ **Weak match** - Found loosely related article (Similarity: {similarity:.1%})"

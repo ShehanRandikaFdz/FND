@@ -1,14 +1,13 @@
 """
-Model Loader with Memory Optimization for Streamlit
-Loads all three models (SVM, LSTM, BERT) with memory-efficient settings
+Model Loader for Flask Application
+Loads all three models (SVM, LSTM, BERT) with error handling
 """
 
 import os
 import pickle
-import torch
 import numpy as np
-import streamlit as st
 import gc
+from config import Config
 
 # Handle TensorFlow imports with error handling
 try:
@@ -16,7 +15,7 @@ try:
     from tensorflow.keras.preprocessing.text import Tokenizer
     TENSORFLOW_AVAILABLE = True
 except ImportError as e:
-    st.warning(f"TensorFlow not available: {e}")
+    print(f"TensorFlow not available: {e}")
     TENSORFLOW_AVAILABLE = False
 
 # Handle Transformers imports with error handling
@@ -24,18 +23,18 @@ try:
     from transformers import DistilBertTokenizer, DistilBertModel
     TRANSFORMERS_AVAILABLE = True
 except ImportError as e:
-    st.warning(f"Transformers not available: {e}")
+    print(f"Transformers not available: {e}")
     TRANSFORMERS_AVAILABLE = False
 except AttributeError as e:
     if "register_pytree_node" in str(e):
-        st.warning(f"PyTorch compatibility issue: {e}. Please check PyTorch version.")
+        print(f"PyTorch compatibility issue: {e}")
     TRANSFORMERS_AVAILABLE = False
 
 class ModelLoader:
-    """Load and manage all three models with memory optimization"""
+    """Load and manage all three models"""
     
-    def __init__(self, models_dir="models"):
-        self.models_dir = models_dir
+    def __init__(self):
+        self.models_dir = Config.MODELS_DIR
         self.models = {}
         self.vectorizers = {}
         self.tokenizers = {}
@@ -44,85 +43,78 @@ class ModelLoader:
     def load_svm_model(self):
         """Load SVM model and vectorizer"""
         try:
-            svm_path = os.path.join(self.models_dir, "new_svm_model.pkl")
-            vectorizer_path = os.path.join(self.models_dir, "new_svm_vectorizer.pkl")
-            
-            if os.path.exists(svm_path) and os.path.exists(vectorizer_path):
-                with open(svm_path, 'rb') as f:
+            if os.path.exists(Config.SVM_MODEL_PATH) and os.path.exists(Config.SVM_VECTORIZER_PATH):
+                with open(Config.SVM_MODEL_PATH, 'rb') as f:
                     self.models['svm'] = pickle.load(f)
-                with open(vectorizer_path, 'rb') as f:
+                with open(Config.SVM_VECTORIZER_PATH, 'rb') as f:
                     self.vectorizers['svm'] = pickle.load(f)
                 
                 self.model_status['svm'] = "loaded"
+                print("SVM model loaded successfully")
                 return True
             else:
                 self.model_status['svm'] = "not_found"
+                print("SVM model files not found")
                 return False
                 
         except Exception as e:
-            st.error(f"Error loading SVM model: {e}")
+            print(f"Error loading SVM model: {e}")
             self.model_status['svm'] = "error"
             return False
     
     def load_lstm_model(self):
         """Load LSTM model and tokenizer"""
         if not TENSORFLOW_AVAILABLE:
-            st.warning("TensorFlow not available - skipping LSTM model")
+            print("WARNING: TensorFlow not available - skipping LSTM model")
             self.model_status['lstm'] = "tensorflow_unavailable"
             return False
             
         try:
-            lstm_path = os.path.join(self.models_dir, "lstm_fake_news_model.h5")
-            tokenizer_path = os.path.join(self.models_dir, "lstm_tokenizer.pkl")
-            
-            if os.path.exists(lstm_path) and os.path.exists(tokenizer_path):
+            if os.path.exists(Config.LSTM_MODEL_PATH) and os.path.exists(Config.LSTM_TOKENIZER_PATH):
                 try:
-                    # Try loading with compatibility settings
-                    self.models['lstm'] = load_model(lstm_path, compile=False)
-                    with open(tokenizer_path, 'rb') as f:
+                    # Load with compatibility settings
+                    self.models['lstm'] = load_model(Config.LSTM_MODEL_PATH, compile=False)
+                    with open(Config.LSTM_TOKENIZER_PATH, 'rb') as f:
                         self.tokenizers['lstm'] = pickle.load(f)
                     
                     self.model_status['lstm'] = "loaded"
+                    print(" LSTM model loaded successfully")
                     return True
                 except Exception as model_error:
-                    st.warning(f"LSTM model loading failed: {model_error}")
+                    print(f"WARNING: LSTM model compatibility issue: {model_error}")
                     self.model_status['lstm'] = "compatibility_error"
                     return False
             else:
                 self.model_status['lstm'] = "not_found"
+                print(" LSTM model files not found")
                 return False
                 
         except Exception as e:
-            st.error(f"Error loading LSTM model: {e}")
+            print(f" Error loading LSTM model: {e}")
             self.model_status['lstm'] = "error"
             return False
     
     def load_bert_model(self):
-        """Load hybrid BERT model (Pre-trained DistilBERT + Logistic Regression) with memory optimization"""
+        """Load hybrid BERT model (Pre-trained DistilBERT + Logistic Regression)"""
         if not TRANSFORMERS_AVAILABLE:
-            st.warning("Transformers not available - skipping BERT model")
+            print("WARNING: Transformers not available - skipping BERT model")
             self.model_status['bert'] = "transformers_unavailable"
             return False
             
         try:
-            bert_path = os.path.join(self.models_dir, "bert_fake_news_model")
-            classifier_path = os.path.join(bert_path, "classifier.pkl")
+            classifier_path = os.path.join(Config.BERT_MODEL_PATH, "classifier.pkl")
             
             if os.path.exists(classifier_path):
-                # Set memory-efficient settings
-                os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
-                
-                # Load pre-trained DistilBERT for feature extraction (no local weights needed)
+                # Load pre-trained DistilBERT for feature extraction
                 try:
                     self.models['bert'] = DistilBertModel.from_pretrained(
-                        "distilbert-base-uncased",  # Use pre-trained model
-                        low_cpu_mem_usage=False  # Disable to avoid accelerate dependency
+                        "distilbert-base-uncased",
+                        low_cpu_mem_usage=False
                     )
                 except Exception as bert_error:
                     error_msg = str(bert_error)
-                    if "numpy._core" in error_msg or "Accelerate" in error_msg:
-                        st.warning(f"BERT model compatibility issue: {error_msg[:100]}, trying alternative loading...")
-                        # Try basic loading without any special options
+                    if "numpy._core" in error_msg:
+                        print("WARNING: BERT model compatibility issue, trying alternative loading...")
                         self.models['bert'] = DistilBertModel.from_pretrained(
                             "distilbert-base-uncased"
                         )
@@ -130,7 +122,7 @@ class ModelLoader:
                         raise bert_error
                 
                 self.tokenizers['bert'] = DistilBertTokenizer.from_pretrained(
-                    "distilbert-base-uncased"  # Use pre-trained tokenizer
+                    "distilbert-base-uncased"
                 )
                 
                 # Load the logistic regression classifier
@@ -140,49 +132,27 @@ class ModelLoader:
                 # Set model to evaluation mode
                 self.models['bert'].eval()
                 
-                # Only use half precision if supported
-                try:
-                    self.models['bert'] = self.models['bert'].half()  # Convert to half precision
-                except Exception:
-                    pass  # Skip if half precision not supported
-                
                 self.model_status['bert'] = "loaded"
+                print(" BERT model loaded successfully")
                 return True
             else:
                 self.model_status['bert'] = "not_found"
+                print(" BERT classifier file not found")
                 return False
                 
         except Exception as e:
-            st.error(f"Error loading BERT model: {e}")
+            print(f" Error loading BERT model: {e}")
             self.model_status['bert'] = "error"
             return False
     
     def load_all_models(self):
         """Load all available models"""
-        st.info("Loading models...")
+        print(" Loading ML models...")
         
-        # Create progress bar
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        # Load SVM
-        status_text.text("Loading SVM model...")
+        # Load all models
         svm_loaded = self.load_svm_model()
-        progress_bar.progress(33)
-        
-        # Load LSTM
-        status_text.text("Loading LSTM model...")
         lstm_loaded = self.load_lstm_model()
-        progress_bar.progress(66)
-        
-        # Load BERT
-        status_text.text("Loading BERT model (this may take a moment)...")
         bert_loaded = self.load_bert_model()
-        progress_bar.progress(100)
-        
-        # Clear progress indicators
-        progress_bar.empty()
-        status_text.empty()
         
         # Display results
         loaded_models = []
@@ -191,10 +161,10 @@ class ModelLoader:
                 loaded_models.append(model_name.upper())
         
         if loaded_models:
-            st.success(f"✅ Successfully loaded models: {', '.join(loaded_models)}")
+            print(f" Successfully loaded models: {', '.join(loaded_models)}")
             return True
         else:
-            st.error("❌ No models could be loaded!")
+            print(" No models could be loaded!")
             return False
     
     def get_model_status(self):
@@ -204,19 +174,6 @@ class ModelLoader:
     def cleanup_memory(self):
         """Clean up memory after model operations"""
         gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-@st.cache_resource
-def load_models():
-    """Streamlit cached function to load models once"""
-    loader = ModelLoader()
-    success = loader.load_all_models()
-    
-    if success:
-        return loader
-    else:
-        return None
 
 def get_model_info():
     """Get information about model performance"""

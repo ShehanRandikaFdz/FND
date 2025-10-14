@@ -1,532 +1,265 @@
 """
-Unified Fake News Detection & Verification System
-Combines ML prediction with automatic online news verification
+Flask Fake News Detector Application
+Clean implementation with all three ML models and NewsAPI integration
 """
 
-import streamlit as st
 import os
 import sys
-import time
+import json
 from datetime import datetime
+from flask import Flask, render_template, request, jsonify, session
+from flask_cors import CORS
+from config import Config
 
-# Add current directory to path
+# Add current directory to Python path
 sys.path.insert(0, os.path.dirname(__file__))
 
-# Quick compatibility check
-try:
-    from utils.compatibility import fix_numpy_compatibility
-    fix_numpy_compatibility()
-except ImportError:
-    pass
+# Initialize Flask app
+app = Flask(__name__)
+app.secret_key = Config.SECRET_KEY
+CORS(app)
 
-# Page configuration
-st.set_page_config(
-    page_title="Fake News Detection & Verification System",
-    page_icon="🔍",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Global variables for ML components
+model_loader = None
+predictor = None
+news_verifier = None
+news_fetcher = None
 
-# Custom CSS
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 1rem;
-        background: linear-gradient(120deg, #2196F3, #00BCD4);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: bold;
-    }
-    .sub-header {
-        text-align: center;
-        color: #666;
-        margin-bottom: 2rem;
-        font-size: 1.1rem;
-    }
-    .prediction-result {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-    }
-    .fake-result {
-        background-color: #ffebee;
-        border-left: 5px solid #f44336;
-    }
-    .true-result {
-        background-color: #e8f5e9;
-        border-left: 5px solid #4caf50;
-    }
-    .verified-result {
-        background-color: #e3f2fd;
-        border-left: 5px solid #2196f3;
-    }
-    .confidence-high {
-        color: #4caf50;
-        font-weight: bold;
-    }
-    .confidence-medium {
-        color: #ff9800;
-        font-weight: bold;
-    }
-    .confidence-low {
-        color: #f44336;
-        font-weight: bold;
-    }
-    .model-card {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
-        border-left: 4px solid #007bff;
-    }
-    .verification-card {
-        background-color: #f0f8ff;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
-        border-left: 4px solid #17a2b8;
-    }
-    .article-card {
-        background-color: #ffffff;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
-        border: 1px solid #dee2e6;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Initialize session state
-if 'analyzer' not in st.session_state:
-    st.session_state.analyzer = None
-if 'loading_time' not in st.session_state:
-    st.session_state.loading_time = None
-if 'predictor' not in st.session_state:
-    st.session_state.predictor = None
-if 'preprocessor' not in st.session_state:
-    st.session_state.preprocessor = None
-
-@st.cache_resource
-def load_system():
-    """Load the ML system components"""
+def initialize_ml_components():
+    """Initialize ML models and components"""
+    global model_loader, predictor, news_verifier, news_fetcher
+    
     try:
-        from utils.model_loader import ModelLoader
-        from utils.predictor import UnifiedPredictor
-        from utils.text_preprocessor import TextPreprocessor
+        print("Initializing ML components...")
         
+        # Initialize model loader
+        from utils.model_loader import ModelLoader
         model_loader = ModelLoader()
         
         # Load all models
-        model_loader.load_svm_model()
-        model_loader.load_lstm_model()
-        model_loader.load_bert_model()
+        success = model_loader.load_all_models()
         
-        predictor = UnifiedPredictor(model_loader)
-        preprocessor = TextPreprocessor()
-        
-        return model_loader, predictor, preprocessor, True
-    except Exception as e:
-        st.error(f"Error loading system: {e}")
-        return None, None, None, False
-
-def display_ml_predictions(ml_results):
-    """Display ML prediction results"""
-    st.subheader("🤖 ML Model Predictions")
-    
-    if "error" in ml_results:
-        st.error(f"Error: {ml_results['error']}")
-        return
-    
-    final_prediction = ml_results.get("final_prediction", "UNKNOWN")
-    confidence = ml_results.get("confidence", 0)
-    individual_results = ml_results.get("individual_results", {})
-    votes = ml_results.get("votes", {"FAKE": 0, "TRUE": 0})
-    
-    # Display individual model results
-    if individual_results:
-        for model_name, model_result in individual_results.items():
-            pred = model_result.get("prediction", "UNKNOWN")
-            conf = model_result.get("confidence", 0)
-            
-            # Model-specific styling
-            if pred == "FAKE":
-                model_icon = "🔴"
-                model_color = "#ffcdd2"
-            else:
-                model_icon = "🟢"
-                model_color = "#c8e6c9"
-            
-            with st.container():
-                st.markdown(f"""
-                <div class="model-card">
-                    <strong>{model_icon} {model_name.upper()}</strong>: {pred} ({conf:.1f}%)
-                </div>
-                """, unsafe_allow_html=True)
-    
-    # Display voting breakdown
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("FAKE Votes", votes["FAKE"])
-    with col2:
-        st.metric("TRUE Votes", votes["TRUE"])
-    
-    # Display final ML result
-    if final_prediction == "FAKE":
-        result_class = "fake-result"
-        icon = "🚨"
-    else:
-        result_class = "true-result"
-        icon = "✅"
-    
-    st.markdown(f"""
-    <div class="prediction-result {result_class}">
-        <h4>{icon} ML Ensemble Result: {final_prediction}</h4>
-        <p class="confidence-high">Confidence: {confidence:.1f}%</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-def display_verification_results(verification_result):
-    """Display online verification results"""
-    st.subheader("📰 Online Verification")
-    
-    if not verification_result:
-        st.info("ℹ️ Verification not performed")
-        return
-    
-    if verification_result.get('found_online', False):
-        best_match = verification_result.get('best_match', {})
-        similarity_score = verification_result.get('similarity_score', 0)
-        all_matches = verification_result.get('all_matches', [])
-        
-        # Display verification summary
-        if similarity_score > 0.8:
-            status_icon = "✅"
-            status_text = "Highly Verified"
-            status_color = "#4caf50"
-        elif similarity_score > 0.6:
-            status_icon = "✅"
-            status_text = "Likely Verified"
-            status_color = "#8bc34a"
-        elif similarity_score > 0.4:
-            status_icon = "⚠️"
-            status_text = "Partially Verified"
-            status_color = "#ff9800"
+        if success:
+            # Initialize predictor
+            from utils.predictor import UnifiedPredictor
+            predictor = UnifiedPredictor(model_loader)
+            print("ML models and predictor initialized")
         else:
-            status_icon = "❓"
-            status_text = "Weak Match"
-            status_color = "#ff5722"
+            print("WARNING: Some models failed to load, but predictor will use available models")
+            from utils.predictor import UnifiedPredictor
+            predictor = UnifiedPredictor(model_loader)
         
-        st.markdown(f"""
-        <div class="verification-card">
-            <h4>{status_icon} {status_text}</h4>
-            <p><strong>Similarity Score:</strong> {similarity_score:.1%}</p>
-            <p><strong>Articles Found:</strong> {len(all_matches)}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Display best match
-        if best_match:
-            st.markdown("**📄 Best Match:**")
-            source_name = best_match.get('source', {}).get('name', 'Unknown Source')
-            title = best_match.get('title', 'No title')
-            description = best_match.get('description', 'No description')
-            url = best_match.get('url', '#')
-            published_at = best_match.get('publishedAt', 'Unknown date')
-            
-            # Format date
-            try:
-                if published_at and published_at != 'Unknown date':
-                    pub_date = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
-                    formatted_date = pub_date.strftime('%Y-%m-%d %H:%M')
-                else:
-                    formatted_date = published_at
-            except:
-                formatted_date = published_at
-            
-            with st.container():
-                st.markdown(f"""
-                <div class="article-card">
-                    <h5>{title}</h5>
-                    <p><strong>Source:</strong> {source_name}</p>
-                    <p><strong>Published:</strong> {formatted_date}</p>
-                    <p><strong>Similarity:</strong> {similarity_score:.1%}</p>
-                    <p>{description}</p>
-                    <a href="{url}" target="_blank">Read Full Article →</a>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # Display other matches
-        if len(all_matches) > 1:
-            with st.expander(f"📋 View All Matches ({len(all_matches)})"):
-                for i, match in enumerate(all_matches[1:], 2):
-                    source_name = match.get('source', {}).get('name', 'Unknown')
-                    title = match.get('title', 'No title')
-                    similarity = match.get('similarity_score', 0)
-                    url = match.get('url', '#')
-                    
-                    st.markdown(f"""
-                    **{i}.** [{title}]({url})  
-                    *{source_name}* - Similarity: {similarity:.1%}
-                    """)
-    else:
-        error_msg = verification_result.get('error', 'No matching articles found')
-        st.markdown(f"""
-        <div class="verification-card">
-            <h4>❌ Not Found Online</h4>
-            <p>{error_msg}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-def display_final_assessment(final_assessment, ml_results, verification_result):
-    """Display the final credibility assessment"""
-    st.markdown("---")
-    st.subheader("🎯 Final Assessment")
-    
-    # Determine assessment styling
-    if 'VERIFIED_TRUE' in final_assessment:
-        assessment_class = "verified-result"
-        assessment_icon = "✅"
-        assessment_color = "#2196f3"
-    elif 'LIKELY_TRUE' in final_assessment:
-        assessment_class = "true-result"
-        assessment_icon = "✅"
-        assessment_color = "#4caf50"
-    elif 'LIKELY_FAKE' in final_assessment:
-        assessment_class = "fake-result"
-        assessment_icon = "🚨"
-        assessment_color = "#f44336"
-    elif 'CONFLICTING' in final_assessment:
-        assessment_class = "prediction-result"
-        assessment_icon = "⚠️"
-        assessment_color = "#ff9800"
-    else:
-        assessment_class = "prediction-result"
-        assessment_icon = "❓"
-        assessment_color = "#666"
-    
-    # Create assessment explanation
-    explanation = get_assessment_explanation(final_assessment, ml_results, verification_result)
-    
-    st.markdown(f"""
-    <div class="{assessment_class}">
-        <h3>{assessment_icon} {final_assessment.replace('_', ' ').title()}</h3>
-        <p>{explanation}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-def get_assessment_explanation(assessment, ml_results, verification_result):
-    """Generate explanation for the final assessment"""
-    explanations = {
-        'VERIFIED_TRUE': "This content appears to be TRUE and has been verified against online sources with high confidence.",
-        'LIKELY_TRUE_VERIFIED': "This content appears to be TRUE and has been partially verified against online sources.",
-        'LIKELY_TRUE_NOT_VERIFIED': "This content appears to be TRUE based on ML analysis, but no matching online sources were found.",
-        'LIKELY_FAKE_NOT_FOUND': "This content appears to be FAKE based on ML analysis and was not found in reputable online sources.",
-        'CONFLICTING_HIGH_SIMILARITY': "⚠️ CONFLICT: ML models suggest FAKE, but content was found in reputable sources with high similarity.",
-        'CONFLICTING_MEDIUM_SIMILARITY': "⚠️ CONFLICT: ML models suggest FAKE, but similar content was found in online sources.",
-        'PARTIALLY_VERIFIED': "Content was found online but with low similarity - requires further investigation.",
-        'WEAK_VERIFICATION': "Content was found online but similarity is very low - likely not the same story.",
-        'UNKNOWN_NOT_VERIFIED': "Unable to determine credibility - no clear indicators found."
-    }
-    
-    return explanations.get(assessment, f"Assessment: {assessment}")
-
-def main():
-    """Main application interface"""
-    st.markdown('<h1 class="main-header">🔍 Fake News Detection & Verification System</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Advanced ML Analysis + Online Source Verification</p>', unsafe_allow_html=True)
-    
-    # Load system components
-    if st.session_state.analyzer is None:
-        with st.spinner("⚡ Loading ML models and verification system..."):
-            start_time = time.time()
-            model_loader, predictor, preprocessor, success = load_system()
-            if success:
-                st.session_state.analyzer = model_loader
-                st.session_state.predictor = predictor
-                st.session_state.preprocessor = preprocessor
-                st.session_state.loading_time = time.time() - start_time
-                st.success(f"✅ System loaded in {st.session_state.loading_time:.1f}s - Ready for analysis!")
-            else:
-                st.error("❌ Failed to load system components")
-                return
-    
-    # Main input section
-    st.markdown("### 📝 Enter News Text for Analysis")
-    
-    # Text input
-    text_input = st.text_area(
-        "Paste or type the news text you want to analyze:",
-        height=150,
-        placeholder="Enter news article text here...",
-        help="Minimum 10 characters. The system will analyze this text using ML models and optionally verify it against online sources."
-    )
-    
-    # Options
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        enable_verification = st.checkbox(
-            "🔍 Enable Online Verification", 
-            value=True,
-            help="Search for this text in online news sources to verify authenticity"
-        )
-    
-    with col2:
-        show_preprocessing = st.checkbox(
-            "🔧 Show Text Preprocessing Steps",
-            value=False,
-            help="Display step-by-step text preprocessing"
-        )
-    
-    # Analyze button
-    if st.button("🚀 Analyze Text", type="primary", use_container_width=True):
-        if not text_input or len(text_input.strip()) < 10:
-            st.warning("⚠️ Please enter at least 10 characters of text to analyze.")
-            return
-        
-        # Show preprocessing if requested
-        if show_preprocessing:
-            st.markdown("---")
-            st.subheader("🔧 Text Preprocessing")
-            
-            preprocessing_result = st.session_state.preprocessor.preprocess(text_input, show_steps=True)
-            stats = st.session_state.preprocessor.get_preprocessing_stats(text_input, preprocessing_result['processed'])
-            
-            # Display preprocessing steps
-            if preprocessing_result['steps']:
-                html_steps = st.session_state.preprocessor.display_preprocessing_steps(preprocessing_result['steps'])
-                st.markdown(html_steps, unsafe_allow_html=True)
-            
-            # Display stats
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Original Length", f"{stats['original_length']} chars")
-            with col2:
-                st.metric("Processed Length", f"{stats['processed_length']} chars")
-            with col3:
-                st.metric("Reduction", f"{stats['reduction_percentage']:.1f}%")
-        
-        # Perform analysis
-        with st.spinner("🔍 Analyzing text..."):
-            try:
-                # Get unified prediction and verification
-                results = st.session_state.predictor.predict_and_verify(
-                    text_input, 
-                    enable_verification=enable_verification
-                )
-                
-                ml_results = results['ml_prediction']
-                verification_result = results['verification'] if enable_verification else None
-                final_assessment = results['final_assessment']
-                
-                # Display results in two columns
-                col1, col2 = st.columns([1, 1])
-                
-                with col1:
-                    display_ml_predictions(ml_results)
-                
-                with col2:
-                    if enable_verification:
-                        display_verification_results(verification_result)
-                    else:
-                        st.info("ℹ️ Online verification disabled")
-                
-                # Display final assessment
-                display_final_assessment(final_assessment, ml_results, verification_result)
-                
-                # Store results in session state for potential export
-                st.session_state.last_results = results
-                
-            except Exception as e:
-                st.error(f"❌ Analysis failed: {e}")
-    
-    # Real-time monitoring section
-    st.markdown("---")
-    with st.expander("📰 Real-Time News Monitoring", expanded=False):
-        st.markdown("### 🌐 Live News Feed Analysis")
-        st.info("💡 This feature allows you to monitor live news feeds and analyze their credibility in real-time.")
-        
-        # Check if NewsAPI is configured
+        # Initialize news verifier
         try:
-            from config import config
-            if hasattr(config, 'validate') and config.validate():
-                st.success("✅ NewsAPI configured - Real-time monitoring available")
-                
-                # Simple news fetching interface
-                col1, col2 = st.columns([1, 1])
-                
-                with col1:
-                    country = st.selectbox(
-                        "Select Country:",
-                        ['us', 'gb', 'ca', 'au', 'de', 'fr', 'in', 'jp'],
-                        index=0
-                    )
-                
-                with col2:
-                    category = st.selectbox(
-                        "Select Category:",
-                        ['general', 'business', 'technology', 'science', 'health', 'sports', 'entertainment'],
-                        index=0
-                    )
-                
-                if st.button("📡 Fetch Latest News", type="secondary"):
-                    with st.spinner("Fetching latest news..."):
-                        try:
-                            from news_fetcher import NewsFetcher
-                            fetcher = NewsFetcher()
-                            articles = fetcher.fetch_and_analyze(
-                                country=country,
-                                category=category,
-                                page_size=10
-                            )
-                            
-                            if articles:
-                                st.success(f"✅ Fetched {len(articles)} articles")
-                                
-                                for i, article in enumerate(articles[:5], 1):
-                                    credibility = article.get('credibility_score', 0)
-                                    prediction = article.get('prediction', 'UNKNOWN')
-                                    
-                                    if prediction == 'FAKE':
-                                        status_icon = "🚨"
-                                        status_color = "#ffebee"
-                                    elif prediction == 'TRUE':
-                                        status_icon = "✅"
-                                        status_color = "#e8f5e9"
-                                    else:
-                                        status_icon = "❓"
-                                        status_color = "#f5f5f5"
-                                    
-                                    st.markdown(f"""
-                                    <div style="background-color: {status_color}; padding: 1rem; border-radius: 0.5rem; margin: 0.5rem 0;">
-                                        <h5>{status_icon} {article.get('title', 'No title')}</h5>
-                                        <p><strong>Source:</strong> {article.get('source', {}).get('name', 'Unknown')}</p>
-                                        <p><strong>Prediction:</strong> {prediction} (Confidence: {credibility:.1%})</p>
-                                        <p>{article.get('description', 'No description')}</p>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                            else:
-                                st.warning("No articles fetched")
-                                
-                        except ImportError:
-                            st.warning("⚠️ News fetcher not available. Please ensure all dependencies are installed.")
-                        except Exception as e:
-                            st.error(f"Failed to fetch news: {e}")
-            else:
-                st.warning("⚠️ NewsAPI not configured. Please set NEWSAPI_KEY in your environment.")
-                st.code("""
-# To enable real-time monitoring:
-# 1. Get API key from https://newsapi.org/register
-# 2. Create .env file with:
-# NEWSAPI_KEY=your_api_key_here
-                """)
-                
-        except ImportError:
-            st.warning("⚠️ Real-time monitoring components not available")
+            from utils.news_verifier import NewsVerifier
+            news_verifier = NewsVerifier()
+            print("News verifier initialized")
+        except Exception as e:
+            print(f"WARNING: News verifier not available: {e}")
+            news_verifier = None
+        
+        # Initialize news fetcher
+        try:
+            from news_fetcher import NewsFetcher
+            news_fetcher = NewsFetcher()
+            print("News fetcher initialized")
+        except Exception as e:
+            print(f"WARNING: News fetcher not available: {e}")
+            news_fetcher = None
+        
+        print("ML components initialized successfully!")
+        return True
+        
+    except Exception as e:
+        print(f"Error initializing ML components: {e}")
+        return False
 
-if __name__ == "__main__":
-    main()
+def _make_json_safe(obj):
+    """Convert numpy types to JSON-safe Python types"""
+    import numpy as np
+    
+    if isinstance(obj, dict):
+        return {k: _make_json_safe(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_make_json_safe(item) for item in obj]
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif hasattr(obj, 'item'):  # numpy scalar
+        return obj.item()
+    elif hasattr(obj, 'tolist'):  # numpy array
+        return obj.tolist()
+    else:
+        return obj
+
+def add_to_history(result):
+    """Add analysis result to session history"""
+    if 'history' not in session:
+        session['history'] = []
+    session['history'].append(result)
+    session.modified = True
+
+@app.route('/')
+def index():
+    """Serve the main HTML page"""
+    return render_template('index.html')
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    """Analyze text for fake news"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+        
+        if not predictor:
+            return jsonify({'error': 'ML models not loaded'}), 500
+        
+        # Get ML prediction
+        ml_result = predictor.ensemble_predict_majority(text)
+        
+        # Get NewsAPI verification if available
+        news_api_results = {'found': False, 'articles': [], 'error': None}
+        if news_verifier:
+            try:
+                news_api_results = news_verifier.verify_news(text)
+            except Exception as e:
+                news_api_results['error'] = str(e)
+        
+        # Generate explanation
+        explanation = generate_explanation(ml_result, news_api_results)
+        
+        # Build response with JSON-safe types
+        response = {
+            'prediction': ml_result.get('final_prediction', 'UNKNOWN'),
+            'confidence': ml_result.get('confidence', 0),
+            'news_api_results': news_api_results,
+            'individual_results': ml_result.get('individual_results', {}),
+            'timestamp': datetime.now().isoformat(),
+            'text': text[:100] + '...' if len(text) > 100 else text,
+            'explanation': explanation
+        }
+        
+        # Make entire response JSON-safe
+        response = _make_json_safe(response)
+        
+        # Store in history
+        add_to_history(response)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        print(f"Error in analyze: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/fetch-news', methods=['POST'])
+def fetch_news():
+    """Fetch latest news from NewsAPI"""
+    try:
+        if not news_fetcher:
+            # Return mock data if news fetcher not available
+            mock_articles = [
+                {
+                    'title': 'Sample News Article 1',
+                    'description': 'This is a sample news article for testing purposes.',
+                    'url': 'https://example.com/article1',
+                    'source': 'Sample News',
+                    'published_at': '2024-10-13',
+                    'credibility_score': 0.8,
+                    'prediction': 'TRUE',
+                    'confidence': 85
+                },
+                {
+                    'title': 'Sample News Article 2', 
+                    'description': 'Another sample article for demonstration.',
+                    'url': 'https://example.com/article2',
+                    'source': 'Demo News',
+                    'published_at': '2024-10-13',
+                    'credibility_score': 0.3,
+                    'prediction': 'FAKE',
+                    'confidence': 75
+                }
+            ]
+            return jsonify({'articles': mock_articles})
+        
+        data = request.get_json()
+        country = data.get('country', 'us')
+        category = data.get('category', 'general')
+        page_size = data.get('page_size', 10)
+        
+        articles = news_fetcher.fetch_and_analyze(
+            country=country,
+            category=category,
+            page_size=page_size
+        )
+        
+        return jsonify({'articles': articles})
+        
+    except Exception as e:
+        print(f"Error fetching news: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    """Get analysis history"""
+    history = session.get('history', [])
+    return jsonify({'history': history})
+
+@app.route('/clear-history', methods=['POST'])
+def clear_history():
+    """Clear analysis history"""
+    session.clear()  # Clear entire session to remove any problematic data
+    return jsonify({'message': 'History cleared'})
+
+def generate_explanation(ml_result, news_api_results):
+    """Generate explanation based on ML prediction and verification"""
+    prediction = ml_result.get('final_prediction', 'UNKNOWN')
+    confidence = ml_result.get('confidence', 0)
+    
+    # Check if NewsAPI found matching articles
+    if news_api_results.get('found'):
+        articles = news_api_results.get('articles', [])
+        if articles:
+            best_match = articles[0]
+            similarity = best_match.get('similarity_score', 0)
+            return f"Found {len(articles)} matching article(s) in trusted sources. Best match: '{best_match.get('title', 'Unknown')}' from {best_match.get('source', 'Unknown source')} with {similarity:.1%} similarity."
+    
+    # Fallback to ML-based explanation
+    if prediction == 'FAKE':
+        return f"Analysis indicates a high probability of misinformation (confidence: {confidence}%). Text patterns suggest sensationalism or lack of factual basis."
+    elif prediction == 'TRUE':
+        return f"Analysis indicates high probability of credible content (confidence: {confidence}%). Text patterns are consistent with factual reporting."
+    else:
+        return f"Analysis is inconclusive (confidence: {confidence}%). Additional verification may be needed."
+
+if __name__ == '__main__':
+    print("Starting Flask Fake News Detector...")
+    
+    # Initialize ML components
+    if initialize_ml_components():
+        print("Application ready!")
+    else:
+        print("Failed to initialize ML components")
+        print("Running in limited mode...")
+    
+    # Print registered routes
+    print("Registered routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"  {rule}")
+    
+    # Run the application
+    print(f"Starting server on {Config.FLASK_HOST}:{Config.FLASK_PORT}")
+    app.run(
+        debug=Config.FLASK_DEBUG,
+        host=Config.FLASK_HOST,
+        port=Config.FLASK_PORT,
+        use_reloader=False,
+        threaded=True
+    )

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Fake News Detector</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#00ffff",
+                "background-light": "#f5f8f8",
+                "background-dark": "#0f2323",
+              },
+              fontFamily: {
+                "display": ["Work Sans"]
+              },
+              borderRadius: {
+                "DEFAULT": "0.5rem",
+                "lg": "1rem",
+                "xl": "1.5rem",
+                "full": "9999px"
+              },
+            },
+          },
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-800 dark:text-gray-200">
+    <div class="flex flex-col min-h-screen">
+        <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm shadow-md">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <a class="text-2xl font-bold text-gray-900 dark:text-white" href="#">
+                        Fake News Detector 📰
+                    </a>
+                    <button id="dark-mode-toggle" class="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        🌙 Dark
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="flex-grow container mx-auto px-6 py-12">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">Check the authenticity of any news article.</h1>
+                <p class="text-lg md:text-xl text-gray-600 dark:text-gray-400">Using AI and NLP to bring you the truth.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="space-y-8">
+                    <div class="bg-white dark:bg-background-dark/50 p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Detector</h2>
+                        <textarea id="news-text" class="w-full h-48 p-4 rounded-md bg-background-light dark:bg-background-dark border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Paste the article text here..."></textarea>
+                        <div class="flex flex-col sm:flex-row gap-4 mt-4">
+                            <button id="fetch-news-btn" class="w-full flex-1 py-3 px-6 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors duration-300">
+                                Fetch Latest News
+                            </button>
+                            <button id="check-credibility-btn" class="w-full flex-1 py-3 px-6 rounded-md bg-primary text-background-dark font-bold hover:bg-primary/80 transition-colors duration-300">
+                                Check Credibility
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-background-dark/50 p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700" id="output-section">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Analysis Result</h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg font-semibold">Status:</span>
+                                <span id="status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-500/20 text-gray-500">⏳ Analyzing...</span>
+                            </div>
+                            <div>
+                                <span class="text-lg font-semibold">Confidence Score:</span>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-1">
+                                    <div id="confidence-bar" class="bg-primary h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                                <p id="confidence" class="text-right text-sm text-gray-500 dark:text-gray-400 mt-1">0%</p>
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+                                <p><strong class="font-semibold">Source:</strong> <span id="source">-</span></p>
+                                <p><strong class="font-semibold">Published:</strong> <span id="published">-</span></p>
+                                <p><strong class="font-semibold">URL:</strong> <a id="url" class="text-primary hover:underline" href="#" target="_blank">-</a></p>
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <h3 class="text-lg font-semibold mb-2">Explanation</h3>
+                                <div id="explanation-content" class="text-gray-600 dark:text-gray-400">
+                                    <p>Enter text above and click "Check Credibility" to analyze.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-background-dark/50 p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">History</h2>
+                        <button id="clear-history-btn" class="text-sm text-primary hover:underline">Clear History</button>
+                    </div>
+                    <div id="history-list" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                        <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                            <p>No analysis history yet.</p>
+                            <p class="text-sm mt-2">Start by analyzing some text above!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="bg-white dark:bg-background-dark/50 mt-12 py-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="container mx-auto px-6 text-center text-gray-500 dark:text-gray-400">
+                <p>© 2024 Fake News Detector. An AI-powered tool for a more informed world.</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
