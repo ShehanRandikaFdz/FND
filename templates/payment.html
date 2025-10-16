@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Fake News Detector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                        accent: '#06b6d4',
+                        'background-dark': '#0f172a'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <!-- Navigation -->
+    <header class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <a href="/" class="flex items-center space-x-3 group">
+                    <div class="relative">
+                        <div class="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-primary/25 group-hover:shadow-primary/40 transition-all duration-300">
+                            F
+                        </div>
+                        <div class="absolute inset-0 w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+                    </div>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent tracking-tight">Fake News Detector</span>
+                </a>
+                
+                <div class="flex items-center space-x-8">
+                    <!-- Enhanced Navigation Links -->
+                    <nav class="hidden md:flex space-x-8">
+                        <a href="/" class="relative group text-gray-700 dark:text-gray-300 hover:text-primary font-semibold transition-all duration-300 py-2 px-1">
+                            <span class="relative z-10">Detector</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-accent to-secondary group-hover:w-full transition-all duration-300"></div>
+                            <div class="absolute -top-1 -right-1 w-1 h-1 bg-accent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </a>
+                        <a href="/pricing" class="relative group text-gray-700 dark:text-gray-300 hover:text-primary font-semibold transition-all duration-300 py-2 px-1">
+                            <span class="relative z-10">Plans</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-accent to-secondary group-hover:w-full transition-all duration-300"></div>
+                            <div class="absolute -top-1 -right-1 w-1 h-1 bg-accent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </a>
+                        <a href="/commercial" class="relative group text-gray-700 dark:text-gray-300 hover:text-primary font-semibold transition-all duration-300 py-2 px-1">
+                            <span class="relative z-10">Home</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300"></div>
+                            <div class="absolute -top-1 -right-1 w-1 h-1 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </a>
+                    </nav>
+                    
+                    <!-- Enhanced Action Buttons -->
+                    <div class="flex items-center space-x-4">
+                        <a href="/#demo" class="bg-gradient-to-r from-primary to-accent text-white px-8 py-4 rounded-lg font-bold text-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                            Try Free Demo
+                        </a>
+                        
+                        <!-- Simple Dark Mode Toggle -->
+                        <button id="dark-mode-toggle" class="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
+                            🌙
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Payment Section -->
+    <div class="py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                    Complete Your <span class="text-primary">Subscription</span>
+                </h1>
+                <p class="text-xl text-gray-600 dark:text-gray-400">Secure payment processing for your fake news detection plan</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- Payment Form -->
+                <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 rounded-xl shadow-xl border border-white/20 dark:border-gray-700/30">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Payment Information</h2>
+                    
+                    <form id="paymentForm" class="space-y-6">
+                        <!-- Plan Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selected Plan</label>
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 dark:text-white" id="selectedPlan">Professional Plan</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400" id="planDescription">5,000 analyses/month + URL analysis</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-primary" id="planPrice">$99</div>
+                                        <div class="text-sm text-gray-500">/month</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Information -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Card Information</label>
+                            <div class="space-y-4">
+                                <input type="text" placeholder="1234 5678 9012 3456" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" required>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="text" placeholder="MM/YY" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" required>
+                                    <input type="text" placeholder="CVC" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Billing Information -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Billing Information</label>
+                            <div class="space-y-4">
+                                <input type="text" placeholder="Full Name" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" required>
+                                <input type="email" placeholder="Email Address" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" required>
+                                <input type="text" placeholder="Company (Optional)" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="flex items-start space-x-3">
+                            <input type="checkbox" id="terms" class="mt-1 h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary" required>
+                            <label for="terms" class="text-sm text-gray-600 dark:text-gray-400">
+                                I agree to the <a href="#" class="text-primary hover:underline">Terms of Service</a> and <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full bg-gradient-to-r from-primary to-accent text-white py-4 rounded-lg font-bold text-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                            Complete Payment - $99/month
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 rounded-xl shadow-xl border border-white/20 dark:border-gray-700/30">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Order Summary</h2>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 dark:text-gray-400">Professional Plan</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">$99/month</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 dark:text-gray-400">Setup Fee</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">$0</span>
+                        </div>
+                        <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
+                                <span class="text-2xl font-bold text-primary">$99/month</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features Included -->
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-900 dark:text-white mb-3">What's Included:</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <span class="text-green-500 mr-2">✓</span>
+                                5,000 analyses per month
+                            </li>
+                            <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <span class="text-green-500 mr-2">✓</span>
+                                URL analysis included
+                            </li>
+                            <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <span class="text-green-500 mr-2">✓</span>
+                                NewsAPI verification
+                            </li>
+                            <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <span class="text-green-500 mr-2">✓</span>
+                                API access
+                            </li>
+                            <li class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <span class="text-green-500 mr-2">✓</span>
+                                Email support
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Security Badge -->
+                    <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="text-green-500 mr-3">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-green-800 dark:text-green-200">Secure Payment</p>
+                                <p class="text-xs text-green-600 dark:text-green-300">256-bit SSL encryption</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const html = document.documentElement;
+        
+        // Initialize dark mode from localStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && html.classList.contains('dark'))) {
+            html.classList.add('dark');
+            darkModeToggle.innerHTML = '☀️';
+        } else {
+            html.classList.remove('dark');
+            darkModeToggle.innerHTML = '🌙';
+        }
+        
+        darkModeToggle.addEventListener('click', function() {
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                darkModeToggle.innerHTML = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                darkModeToggle.innerHTML = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Payment form handling
+        document.getElementById('paymentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing Payment...';
+            submitBtn.disabled = true;
+            
+            // Simulate payment processing
+            setTimeout(() => {
+                // Show success message
+                showSuccessMessage();
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }, 2000);
+        });
+
+        function showSuccessMessage() {
+            // Create success message box
+            const successBox = document.createElement('div');
+            successBox.className = 'fixed top-4 right-4 bg-green-500 text-white p-6 rounded-lg shadow-lg z-50 max-w-md';
+            successBox.innerHTML = `
+                <div class="flex items-center">
+                    <div class="text-green-100 mr-3">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">Payment Successful!</h3>
+                        <p class="text-sm text-green-100">Your subscription has been activated. Welcome to your plan!</p>
+                    </div>
+                </div>
+            `;
+            
+            // Add to page
+            document.body.appendChild(successBox);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                successBox.remove();
+            }, 5000);
+        }
+
+        // Get plan details from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const plan = urlParams.get('plan');
+        
+        if (plan) {
+            const planDetails = {
+                'starter': {
+                    name: 'Starter Plan',
+                    description: '500 analyses/month + Basic text analysis',
+                    price: '$19'
+                },
+                'professional': {
+                    name: 'Professional Plan',
+                    description: '5,000 analyses/month + URL analysis',
+                    price: '$99'
+                },
+                'business': {
+                    name: 'Business Plan',
+                    description: '25,000 analyses/month + Batch processing',
+                    price: '$299'
+                },
+                'enterprise': {
+                    name: 'Enterprise Plan',
+                    description: 'Unlimited analyses + White-label options',
+                    price: '$999'
+                }
+            };
+            
+            const selectedPlan = planDetails[plan];
+            if (selectedPlan) {
+                document.getElementById('selectedPlan').textContent = selectedPlan.name;
+                document.getElementById('planDescription').textContent = selectedPlan.description;
+                document.getElementById('planPrice').textContent = selectedPlan.price;
+                document.querySelector('button[type="submit"]').textContent = `Complete Payment - ${selectedPlan.price}/month`;
+            }
+        }
+    </script>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="text-center">
+                <p class="text-gray-400">© 2024 Fake News Detector. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

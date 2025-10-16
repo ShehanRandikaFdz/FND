@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Dashboard - FactCheck Pro</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#00ffff",
+                "background-light": "#f5f8f8",
+                "background-dark": "#0f2323",
+              },
+              fontFamily: {
+                sans: ['Work Sans', 'sans-serif'],
+              },
+            },
+          },
+        };
+    </script>
+    <style>
+        body {
+            background-color: #0f2323;
+            color: #e0e0e0;
+        }
+        .dashboard-card {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .stat-card {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #00ffff;
+        }
+        .btn-primary {
+            background-color: #00ffff;
+            color: #0f2323;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #00cccc;
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #00ffff;
+            color: #0f2323;
+        }
+        .progress-bar {
+            background-color: #2d3748;
+            border-radius: 0.25rem;
+            height: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background-color: #00ffff;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .analysis-item {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #00ffff;
+        }
+        .analysis-item.fake {
+            border-left-color: #ff6b6b;
+        }
+        .analysis-item.true {
+            border-left-color: #51cf66;
+        }
+        .analysis-item.unknown {
+            border-left-color: #ffd43b;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-gray-100 font-sans">
+    <!-- Navigation -->
+    <nav class="bg-background-dark border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold text-primary">FactCheck Pro</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-300 hover:text-white">Home</a>
+                    <a href="/pricing" class="text-gray-300 hover:text-white">Pricing</a>
+                    <span class="text-gray-300">Welcome, <span id="user-name">User</span></span>
+                    <button onclick="logout()" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Dashboard</h1>
+            <p class="text-gray-300">Welcome back! Here's your fact-checking overview.</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Monthly Usage</p>
+                        <p class="text-2xl font-bold text-white" id="monthly-usage">0</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Remaining</p>
+                        <p class="text-2xl font-bold text-white" id="remaining-usage">0</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Current Plan</p>
+                        <p class="text-2xl font-bold text-white" id="current-plan">Starter</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Total Analyses</p>
+                        <p class="text-2xl font-bold text-white" id="total-analyses">0</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 1a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Usage Overview -->
+            <div class="lg:col-span-2">
+                <div class="dashboard-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">Usage Overview</h2>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-400 mb-2">
+                            <span>Monthly Usage</span>
+                            <span id="usage-text">0 / 500</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="usage-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-primary" id="daily-usage">0</p>
+                            <p class="text-sm text-gray-400">Today</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-primary" id="weekly-usage">0</p>
+                            <p class="text-sm text-gray-400">This Week</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Analyses -->
+                <div class="dashboard-card mt-6">
+                    <h2 class="text-xl font-semibold text-white mb-4">Recent Analyses</h2>
+                    <div id="recent-analyses">
+                        <div class="analysis-item">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-400">Breaking news: Scientists discover new planet</p>
+                                    <p class="text-xs text-gray-500">2 hours ago</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-800">FAKE</span>
+                                    <p class="text-xs text-gray-400 mt-1">85% confidence</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-400">Local weather forecast for tomorrow</p>
+                                    <p class="text-xs text-gray-500">4 hours ago</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">TRUE</span>
+                                    <p class="text-xs text-gray-400 mt-1">78% confidence</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-400">Stock market reaches new all-time high</p>
+                                    <p class="text-xs text-gray-500">6 hours ago</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">UNKNOWN</span>
+                                    <p class="text-xs text-gray-400 mt-1">65% confidence</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-secondary w-full mt-4" onclick="viewAllAnalyses()">
+                        View All Analyses
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Quick Actions -->
+                <div class="dashboard-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">Quick Actions</h2>
+                    <div class="space-y-3">
+                        <button class="btn-primary w-full" onclick="analyzeText()">
+                            Analyze Text
+                        </button>
+                        <button class="btn-secondary w-full" onclick="analyzeUrl()">
+                            Analyze URL
+                        </button>
+                        <button class="btn-secondary w-full" onclick="fetchNews()">
+                            Fetch News
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Plan Information -->
+                <div class="dashboard-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">Plan Information</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Current Plan:</span>
+                            <span class="text-white font-semibold" id="plan-name">Starter</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Monthly Limit:</span>
+                            <span class="text-white font-semibold" id="plan-limit">500</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Price:</span>
+                            <span class="text-white font-semibold" id="plan-price">$19/month</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Next Billing:</span>
+                            <span class="text-white font-semibold" id="next-billing">Jan 1, 2024</span>
+                        </div>
+                    </div>
+                    <button class="btn-secondary w-full mt-4" onclick="upgradePlan()">
+                        Upgrade Plan
+                    </button>
+                </div>
+
+                <!-- Usage Chart -->
+                <div class="dashboard-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">Usage Trend</h2>
+                    <canvas id="usageChart" width="300" height="200"></canvas>
+                </div>
+
+                <!-- Support -->
+                <div class="dashboard-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">Need Help?</h2>
+                    <div class="space-y-3">
+                        <a href="/help" class="block text-primary hover:text-cyan-300">Help Center</a>
+                        <a href="/docs" class="block text-primary hover:text-cyan-300">Documentation</a>
+                        <a href="/contact" class="block text-primary hover:text-cyan-300">Contact Support</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/commercial/dashboard');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateDashboard(data);
+                } else {
+                    console.error('Failed to load dashboard data:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update user info
+            document.getElementById('user-name').textContent = data.user.email;
+            
+            // Update usage stats
+            document.getElementById('monthly-usage').textContent = data.usage.monthly_usage;
+            document.getElementById('remaining-usage').textContent = data.usage.remaining;
+            document.getElementById('total-analyses').textContent = data.usage.total_usage;
+            
+            // Update plan info
+            document.getElementById('current-plan').textContent = data.plan_info.name;
+            document.getElementById('plan-name').textContent = data.plan_info.name;
+            document.getElementById('plan-limit').textContent = data.plan_info.analysis_limit;
+            document.getElementById('plan-price').textContent = `$${data.plan_info.price}/month`;
+            
+            // Update usage progress
+            const usagePercent = (data.usage.monthly_usage / data.plan_info.analysis_limit) * 100;
+            document.getElementById('usage-progress').style.width = `${usagePercent}%`;
+            document.getElementById('usage-text').textContent = `${data.usage.monthly_usage} / ${data.plan_info.analysis_limit}`;
+            
+            // Update usage chart
+            updateUsageChart(data.usage.monthly_usage, data.plan_info.analysis_limit);
+        }
+
+        function updateUsageChart(used, limit) {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Used', 'Remaining'],
+                    datasets: [{
+                        data: [used, limit - used],
+                        backgroundColor: ['#00ffff', '#2d3748'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function logout() {
+            fetch('/commercial/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    window.location.href = '/commercial/login';
+                }
+            })
+            .catch(error => {
+                console.error('Error logging out:', error);
+            });
+        }
+
+        function analyzeText() {
+            window.location.href = '/';
+        }
+
+        function analyzeUrl() {
+            window.location.href = '/';
+        }
+
+        function fetchNews() {
+            window.location.href = '/';
+        }
+
+        function viewAllAnalyses() {
+            window.location.href = '/history';
+        }
+
+        function upgradePlan() {
+            window.location.href = '/pricing';
+        }
+
+        // Load dashboard data on page load
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
+    </script>
+</body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Billing - FactCheck Pro</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#00ffff",
+                "background-light": "#f5f8f8",
+                "background-dark": "#0f2323",
+              },
+              fontFamily: {
+                sans: ['Work Sans', 'sans-serif'],
+              },
+            },
+          },
+        };
+    </script>
+    <style>
+        body {
+            background-color: #0f2323;
+            color: #e0e0e0;
+        }
+        .billing-card {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #00ffff;
+            color: #0f2323;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #00cccc;
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #00ffff;
+            color: #0f2323;
+        }
+        .btn-danger {
+            background-color: #dc2626;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+        .invoice-item {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #00ffff;
+        }
+        .status-active {
+            color: #10b981;
+        }
+        .status-pending {
+            color: #f59e0b;
+        }
+        .status-failed {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-gray-100 font-sans">
+    <!-- Navigation -->
+    <nav class="bg-background-dark border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold text-primary">FactCheck Pro</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-300 hover:text-white">Home</a>
+                    <a href="/dashboard" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/billing" class="text-primary">Billing</a>
+                    <span class="text-gray-300">Welcome, <span id="user-name">User</span></span>
+                    <button onclick="logout()" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Billing Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Billing & Subscription</h1>
+            <p class="text-gray-300">Manage your subscription, view invoices, and update payment methods.</p>
+        </div>
+
+        <!-- Current Subscription -->
+        <div class="billing-card mb-8">
+            <h2 class="text-xl font-semibold text-white mb-4">Current Subscription</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <p class="text-sm text-gray-400">Plan</p>
+                    <p class="text-lg font-semibold text-white" id="current-plan">Starter</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-400">Price</p>
+                    <p class="text-lg font-semibold text-white" id="current-price">$19/month</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-400">Status</p>
+                    <p class="text-lg font-semibold status-active" id="subscription-status">Active</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm text-gray-400">Next Billing Date</p>
+                <p class="text-lg font-semibold text-white" id="next-billing">January 1, 2024</p>
+            </div>
+            <div class="mt-6 flex space-x-4">
+                <button class="btn-secondary" onclick="upgradePlan()">Upgrade Plan</button>
+                <button class="btn-danger" onclick="cancelSubscription()">Cancel Subscription</button>
+            </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="billing-card mb-8">
+            <h2 class="text-xl font-semibold text-white mb-4">Payment Method</h2>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-8 bg-gray-600 rounded flex items-center justify-center">
+                        <span class="text-xs font-bold">VISA</span>
+                    </div>
+                    <div>
+                        <p class="text-white font-semibold">**** **** **** 4242</p>
+                        <p class="text-sm text-gray-400">Expires 12/25</p>
+                    </div>
+                </div>
+                <button class="btn-secondary" onclick="updatePaymentMethod()">Update</button>
+            </div>
+        </div>
+
+        <!-- Billing History -->
+        <div class="billing-card mb-8">
+            <h2 class="text-xl font-semibold text-white mb-4">Billing History</h2>
+            <div class="space-y-4">
+                <div class="invoice-item">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-white font-semibold">Starter Plan - December 2023</p>
+                            <p class="text-sm text-gray-400">Dec 1, 2023</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-white font-semibold">$19.00</p>
+                            <p class="text-sm status-active">Paid</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="invoice-item">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-white font-semibold">Starter Plan - November 2023</p>
+                            <p class="text-sm text-gray-400">Nov 1, 2023</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-white font-semibold">$19.00</p>
+                            <p class="text-sm status-active">Paid</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="invoice-item">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-white font-semibold">Starter Plan - October 2023</p>
+                            <p class="text-sm text-gray-400">Oct 1, 2023</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-white font-semibold">$19.00</p>
+                            <p class="text-sm status-active">Paid</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-secondary w-full mt-4" onclick="viewAllInvoices()">
+                View All Invoices
+            </button>
+        </div>
+
+        <!-- Usage & Billing -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Usage This Month -->
+            <div class="billing-card">
+                <h2 class="text-xl font-semibold text-white mb-4">Usage This Month</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Analyses Used:</span>
+                        <span class="text-white font-semibold" id="analyses-used">150</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Monthly Limit:</span>
+                        <span class="text-white font-semibold" id="monthly-limit">500</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Remaining:</span>
+                        <span class="text-white font-semibold" id="remaining-analyses">350</span>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm text-gray-400 mb-2">
+                            <span>Usage Progress</span>
+                            <span id="usage-percentage">30%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-primary h-2 rounded-full" id="usage-progress" style="width: 30%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billing Information -->
+            <div class="billing-card">
+                <h2 class="text-xl font-semibold text-white mb-4">Billing Information</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Billing Email</label>
+                        <input type="email" value="user@example.com" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Billing Address</label>
+                        <textarea class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary" rows="3">123 Main St
+New York, NY 10001
+United States</textarea>
+                    </div>
+                    <button class="btn-primary w-full" onclick="updateBillingInfo()">
+                        Update Billing Information
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plan Comparison -->
+        <div class="billing-card mt-8">
+            <h2 class="text-xl font-semibold text-white mb-4">Available Plans</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="border border-gray-600 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-white mb-2">Professional</h3>
+                    <p class="text-2xl font-bold text-primary mb-2">$99/month</p>
+                    <ul class="text-sm text-gray-400 space-y-1 mb-4">
+                        <li>5,000 analyses/month</li>
+                        <li>URL analysis</li>
+                        <li>NewsAPI verification</li>
+                        <li>API access</li>
+                    </ul>
+                    <button class="btn-secondary w-full" onclick="upgradeToPlan('professional')">
+                        Upgrade to Professional
+                    </button>
+                </div>
+                <div class="border border-gray-600 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-white mb-2">Business</h3>
+                    <p class="text-2xl font-bold text-primary mb-2">$299/month</p>
+                    <ul class="text-sm text-gray-400 space-y-1 mb-4">
+                        <li>25,000 analyses/month</li>
+                        <li>Batch processing</li>
+                        <li>Custom integrations</li>
+                        <li>Team management</li>
+                    </ul>
+                    <button class="btn-secondary w-full" onclick="upgradeToPlan('business')">
+                        Upgrade to Business
+                    </button>
+                </div>
+                <div class="border border-gray-600 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-white mb-2">Enterprise</h3>
+                    <p class="text-2xl font-bold text-primary mb-2">$999/month</p>
+                    <ul class="text-sm text-gray-400 space-y-1 mb-4">
+                        <li>Unlimited analyses</li>
+                        <li>White-label options</li>
+                        <li>On-premise deployment</li>
+                        <li>Dedicated support</li>
+                    </ul>
+                    <button class="btn-secondary w-full" onclick="upgradeToPlan('enterprise')">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Cancel Subscription Modal -->
+    <div id="cancel-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-background-dark border border-gray-600 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-semibold text-white mb-4">Cancel Subscription</h3>
+            <p class="text-gray-300 mb-6">
+                Are you sure you want to cancel your subscription? You'll lose access to all premium features and your data will be deleted after 30 days.
+            </p>
+            <div class="flex space-x-4">
+                <button class="btn-danger flex-1" onclick="confirmCancel()">Yes, Cancel</button>
+                <button class="btn-secondary flex-1" onclick="closeCancelModal()">Keep Subscription</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Payment Method Modal -->
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-background-dark border border-gray-600 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-semibold text-white mb-4">Update Payment Method</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Card Number</label>
+                    <input type="text" placeholder="1234 5678 9012 3456" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Expiry Date</label>
+                        <input type="text" placeholder="MM/YY" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">CVC</label>
+                        <input type="text" placeholder="123" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-4 mt-6">
+                <button class="btn-primary flex-1" onclick="savePaymentMethod()">Save</button>
+                <button class="btn-secondary flex-1" onclick="closePaymentModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load billing data
+        async function loadBillingData() {
+            try {
+                const response = await fetch('/commercial/dashboard');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateBillingInfo(data);
+                } else {
+                    console.error('Failed to load billing data:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading billing data:', error);
+            }
+        }
+
+        function updateBillingInfo(data) {
+            // Update user info
+            document.getElementById('user-name').textContent = data.user.email;
+            
+            // Update subscription info
+            document.getElementById('current-plan').textContent = data.plan_info.name;
+            document.getElementById('current-price').textContent = `$${data.plan_info.price}/month`;
+            
+            // Update usage info
+            document.getElementById('analyses-used').textContent = data.usage.monthly_usage;
+            document.getElementById('monthly-limit').textContent = data.plan_info.analysis_limit;
+            document.getElementById('remaining-analyses').textContent = data.usage.remaining;
+            
+            // Update usage progress
+            const usagePercent = (data.usage.monthly_usage / data.plan_info.analysis_limit) * 100;
+            document.getElementById('usage-progress').style.width = `${usagePercent}%`;
+            document.getElementById('usage-percentage').textContent = `${Math.round(usagePercent)}%`;
+        }
+
+        function logout() {
+            fetch('/commercial/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    window.location.href = '/commercial/login';
+                }
+            })
+            .catch(error => {
+                console.error('Error logging out:', error);
+            });
+        }
+
+        function upgradePlan() {
+            window.location.href = '/pricing';
+        }
+
+        function cancelSubscription() {
+            document.getElementById('cancel-modal').classList.remove('hidden');
+            document.getElementById('cancel-modal').classList.add('flex');
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancel-modal').classList.add('hidden');
+            document.getElementById('cancel-modal').classList.remove('flex');
+        }
+
+        function confirmCancel() {
+            // Implement cancellation logic
+            alert('Subscription cancelled. You will lose access at the end of your current billing period.');
+            closeCancelModal();
+        }
+
+        function updatePaymentMethod() {
+            document.getElementById('payment-modal').classList.remove('hidden');
+            document.getElementById('payment-modal').classList.add('flex');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.add('hidden');
+            document.getElementById('payment-modal').classList.remove('flex');
+        }
+
+        function savePaymentMethod() {
+            // Implement payment method update logic
+            alert('Payment method updated successfully!');
+            closePaymentModal();
+        }
+
+        function viewAllInvoices() {
+            // Implement view all invoices logic
+            alert('Redirecting to invoice history...');
+        }
+
+        function updateBillingInfo() {
+            // Implement billing info update logic
+            alert('Billing information updated successfully!');
+        }
+
+        function upgradeToPlan(plan) {
+            if (plan === 'enterprise') {
+                window.location.href = '/contact';
+            } else {
+                // Implement plan upgrade logic
+                alert(`Upgrading to ${plan} plan...`);
+            }
+        }
+
+        // Load billing data on page load
+        document.addEventListener('DOMContentLoaded', loadBillingData);
+    </script>
+</body>
+</html>

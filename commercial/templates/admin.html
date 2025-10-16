@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Admin Dashboard - FactCheck Pro</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#00ffff",
+                "background-light": "#f5f8f8",
+                "background-dark": "#0f2323",
+              },
+              fontFamily: {
+                sans: ['Work Sans', 'sans-serif'],
+              },
+            },
+          },
+        };
+    </script>
+    <style>
+        body {
+            background-color: #0f2323;
+            color: #e0e0e0;
+        }
+        .admin-card {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .stat-card {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #00ffff;
+        }
+        .btn-primary {
+            background-color: #00ffff;
+            color: #0f2323;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #00cccc;
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #00ffff;
+            color: #0f2323;
+        }
+        .btn-danger {
+            background-color: #dc2626;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+        .user-item {
+            background-color: #1a3030;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #00ffff;
+        }
+        .status-active {
+            color: #10b981;
+        }
+        .status-suspended {
+            color: #f59e0b;
+        }
+        .status-inactive {
+            color: #ef4444;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #2d3748;
+        }
+        .table th {
+            background-color: #2d3748;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-gray-100 font-sans">
+    <!-- Navigation -->
+    <nav class="bg-background-dark border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-2xl font-bold text-primary">FactCheck Pro</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-300 hover:text-white">Home</a>
+                    <a href="/dashboard" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/admin" class="text-primary">Admin</a>
+                    <span class="text-gray-300">Admin User</span>
+                    <button onclick="logout()" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+            <p class="text-gray-300">Manage users, monitor system performance, and view analytics.</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Total Users</p>
+                        <p class="text-2xl font-bold text-white" id="total-users">0</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Active Users</p>
+                        <p class="text-2xl font-bold text-white" id="active-users">0</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Total Revenue</p>
+                        <p class="text-2xl font-bold text-white" id="total-revenue">$0</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-400">Monthly Revenue</p>
+                        <p class="text-2xl font-bold text-white" id="monthly-revenue">$0</p>
+                    </div>
+                    <div class="text-primary">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Users Management -->
+            <div class="lg:col-span-2">
+                <div class="admin-card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-white">Users Management</h2>
+                        <button class="btn-primary" onclick="addUser()">Add User</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Plan</th>
+                                    <th>Status</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table">
+                                <tr>
+                                    <td>user1@example.com</td>
+                                    <td>Starter</td>
+                                    <td><span class="status-active">Active</span></td>
+                                    <td>2 hours ago</td>
+                                    <td>
+                                        <button class="btn-secondary text-sm" onclick="editUser('user1')">Edit</button>
+                                        <button class="btn-danger text-sm ml-2" onclick="suspendUser('user1')">Suspend</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>user2@example.com</td>
+                                    <td>Professional</td>
+                                    <td><span class="status-active">Active</span></td>
+                                    <td>1 day ago</td>
+                                    <td>
+                                        <button class="btn-secondary text-sm" onclick="editUser('user2')">Edit</button>
+                                        <button class="btn-danger text-sm ml-2" onclick="suspendUser('user2')">Suspend</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>user3@example.com</td>
+                                    <td>Business</td>
+                                    <td><span class="status-suspended">Suspended</span></td>
+                                    <td>1 week ago</td>
+                                    <td>
+                                        <button class="btn-secondary text-sm" onclick="editUser('user3')">Edit</button>
+                                        <button class="btn-primary text-sm ml-2" onclick="activateUser('user3')">Activate</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- System Performance -->
+                <div class="admin-card mt-6">
+                    <h2 class="text-xl font-semibold text-white mb-4">System Performance</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">Response Time</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Average:</span>
+                                    <span class="text-white">1.2s</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">P95:</span>
+                                    <span class="text-white">2.5s</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">P99:</span>
+                                    <span class="text-white">5.0s</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-2">Throughput</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Requests/sec:</span>
+                                    <span class="text-white">100</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Analyses/min:</span>
+                                    <span class="text-white">50</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Uptime:</span>
+                                    <span class="text-white">99.9%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Revenue Chart -->
+                <div class="admin-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">Revenue Trend</h2>
+                    <canvas id="revenueChart" width="300" height="200"></canvas>
+                </div>
+
+                <!-- User Growth -->
+                <div class="admin-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">User Growth</h2>
+                    <canvas id="userGrowthChart" width="300" height="200"></canvas>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="admin-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">Quick Actions</h2>
+                    <div class="space-y-3">
+                        <button class="btn-primary w-full" onclick="exportData()">
+                            Export Data
+                        </button>
+                        <button class="btn-secondary w-full" onclick="sendAnnouncement()">
+                            Send Announcement
+                        </button>
+                        <button class="btn-secondary w-full" onclick="systemMaintenance()">
+                            System Maintenance
+                        </button>
+                    </div>
+                </div>
+
+                <!-- System Alerts -->
+                <div class="admin-card">
+                    <h2 class="text-xl font-semibold text-white mb-4">System Alerts</h2>
+                    <div class="space-y-3">
+                        <div class="bg-yellow-900 border border-yellow-600 rounded-lg p-3">
+                            <p class="text-yellow-200 text-sm">High CPU usage detected</p>
+                            <p class="text-yellow-400 text-xs">2 hours ago</p>
+                        </div>
+                        <div class="bg-green-900 border border-green-600 rounded-lg p-3">
+                            <p class="text-green-200 text-sm">All systems operational</p>
+                            <p class="text-green-400 text-xs">1 hour ago</p>
+                        </div>
+                        <div class="bg-blue-900 border border-blue-600 rounded-lg p-3">
+                            <p class="text-blue-200 text-sm">New user registration</p>
+                            <p class="text-blue-400 text-xs">30 minutes ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add User Modal -->
+    <div id="add-user-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-background-dark border border-gray-600 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-semibold text-white mb-4">Add New User</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Email</label>
+                    <input type="email" id="new-user-email" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Name</label>
+                    <input type="text" id="new-user-name" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Plan</label>
+                    <select id="new-user-plan" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="starter">Starter</option>
+                        <option value="professional">Professional</option>
+                        <option value="business">Business</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex space-x-4 mt-6">
+                <button class="btn-primary flex-1" onclick="saveNewUser()">Save</button>
+                <button class="btn-secondary flex-1" onclick="closeAddUserModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load admin data
+        async function loadAdminData() {
+            try {
+                // Simulate loading admin data
+                updateAdminStats({
+                    totalUsers: 1250,
+                    activeUsers: 1100,
+                    totalRevenue: 125000,
+                    monthlyRevenue: 15000
+                });
+                
+                // Initialize charts
+                initializeCharts();
+            } catch (error) {
+                console.error('Error loading admin data:', error);
+            }
+        }
+
+        function updateAdminStats(data) {
+            document.getElementById('total-users').textContent = data.totalUsers.toLocaleString();
+            document.getElementById('active-users').textContent = data.activeUsers.toLocaleString();
+            document.getElementById('total-revenue').textContent = `$${data.totalRevenue.toLocaleString()}`;
+            document.getElementById('monthly-revenue').textContent = `$${data.monthlyRevenue.toLocaleString()}`;
+        }
+
+        function initializeCharts() {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [10000, 12000, 11000, 13000, 14000, 15000],
+                        borderColor: '#00ffff',
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                color: '#2d3748'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                color: '#2d3748'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // User Growth Chart
+            const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+            new Chart(userGrowthCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'New Users',
+                        data: [50, 75, 60, 80, 90, 100],
+                        backgroundColor: '#00ffff',
+                        borderColor: '#00ffff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                color: '#2d3748'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                color: '#2d3748'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function logout() {
+            window.location.href = '/commercial/login';
+        }
+
+        function addUser() {
+            document.getElementById('add-user-modal').classList.remove('hidden');
+            document.getElementById('add-user-modal').classList.add('flex');
+        }
+
+        function closeAddUserModal() {
+            document.getElementById('add-user-modal').classList.add('hidden');
+            document.getElementById('add-user-modal').classList.remove('flex');
+        }
+
+        function saveNewUser() {
+            const email = document.getElementById('new-user-email').value;
+            const name = document.getElementById('new-user-name').value;
+            const plan = document.getElementById('new-user-plan').value;
+            
+            if (email && name) {
+                // Implement save user logic
+                alert(`User ${name} (${email}) added with ${plan} plan!`);
+                closeAddUserModal();
+            } else {
+                alert('Please fill in all fields');
+            }
+        }
+
+        function editUser(userId) {
+            alert(`Editing user: ${userId}`);
+        }
+
+        function suspendUser(userId) {
+            if (confirm(`Are you sure you want to suspend user ${userId}?`)) {
+                alert(`User ${userId} suspended`);
+            }
+        }
+
+        function activateUser(userId) {
+            alert(`User ${userId} activated`);
+        }
+
+        function exportData() {
+            alert('Exporting data...');
+        }
+
+        function sendAnnouncement() {
+            alert('Sending announcement...');
+        }
+
+        function systemMaintenance() {
+            alert('Scheduling system maintenance...');
+        }
+
+        // Load admin data on page load
+        document.addEventListener('DOMContentLoaded', loadAdminData);
+    </script>
+</body>
+</html>
