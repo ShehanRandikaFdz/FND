@@ -203,6 +203,18 @@
                                        placeholder="Create a strong password">
                             </div>
                         </div>
+                        
+                        <div class="relative">
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-400">🔒</span>
+                                </div>
+                                <input id="confirmPassword" name="confirmPassword" type="password" required 
+                                       class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" 
+                                       placeholder="Confirm your password">
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Enhanced Submit Button -->
@@ -1460,7 +1472,7 @@
         // Initialize dark mode toggle
         setupDarkModeToggle();
         
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
@@ -1473,28 +1485,87 @@
                 return;
             }
             
-            // For demo purposes, redirect to dashboard
-            // In a real application, you would send this to your backend for authentication
-            window.location.href = '/commercial';
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Store user data in localStorage for demo
+                    localStorage.setItem('userLoggedIn', 'true');
+                    localStorage.setItem('username', result.user.name);
+                    localStorage.setItem('userEmail', result.user.email);
+                    localStorage.setItem('userPlan', result.user.plan);
+                    
+                    alert('Login successful! Welcome back, ' + result.user.name);
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Login failed: ' + (result.message || 'Invalid credentials'));
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: Network error. Please try again.');
+            }
         }
         
-        function handleRegister(event) {
+        async function handleRegister(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
             const name = formData.get('name');
             const email = formData.get('email');
             const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
             
             // Simple validation
-            if (!name || !email || !password) {
+            if (!name || !email || !password || !confirmPassword) {
                 alert('Please fill in all fields');
                 return;
             }
             
-            // For demo purposes, redirect to dashboard
-            // In a real application, you would send this to your backend for registration
-            window.location.href = '/commercial';
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, password, plan: 'starter' })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Store user data in localStorage for demo
+                    localStorage.setItem('userLoggedIn', 'true');
+                    localStorage.setItem('username', name);
+                    localStorage.setItem('userEmail', email);
+                    localStorage.setItem('userPlan', 'starter');
+                    
+                    alert('Registration successful! Welcome, ' + name);
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Registration failed: ' + (result.message || 'Unable to create account'));
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Registration failed: Network error. Please try again.');
+            }
         }
 
         // Automatic Popular News Carousel

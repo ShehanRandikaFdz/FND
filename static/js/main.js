@@ -34,11 +34,6 @@ function setupEventListeners() {
         checkBtn.addEventListener('click', checkCredibility);
     }
     
-    // Fetch news button
-    const fetchBtn = document.getElementById('fetch-news-btn');
-    if (fetchBtn) {
-        fetchBtn.addEventListener('click', fetchLatestNews);
-    }
     
     // Clear history button
     const clearBtn = document.getElementById('clear-history-btn');
@@ -66,17 +61,23 @@ function setupEventListeners() {
 function setupDarkModeToggle() {
     const toggle = document.getElementById('dark-mode-toggle');
     if (toggle) {
-        toggle.addEventListener('click', function() {
+        // Remove any existing event listeners to prevent duplicates
+        const newToggle = toggle.cloneNode(true);
+        toggle.parentNode.replaceChild(newToggle, toggle);
+        
+        newToggle.addEventListener('click', function() {
             const html = document.documentElement;
             const isDark = html.classList.contains('dark');
             
             if (isDark) {
                 html.classList.remove('dark');
-                toggle.textContent = '🌙 Dark';
+                newToggle.textContent = '🌙';
+                newToggle.innerHTML = '<span class="text-xl">🌙</span>';
                 localStorage.setItem('darkMode', 'false');
             } else {
                 html.classList.add('dark');
-                toggle.textContent = '☀️ Light';
+                newToggle.textContent = '☀️';
+                newToggle.innerHTML = '<span class="text-xl">☀️</span>';
                 localStorage.setItem('darkMode', 'true');
             }
         });
@@ -85,7 +86,10 @@ function setupDarkModeToggle() {
         const savedMode = localStorage.getItem('darkMode');
         if (savedMode === 'true') {
             document.documentElement.classList.add('dark');
-            toggle.textContent = '☀️ Light';
+            newToggle.innerHTML = '<span class="text-xl">☀️</span>';
+        } else {
+            document.documentElement.classList.remove('dark');
+            newToggle.innerHTML = '<span class="text-xl">🌙</span>';
         }
     }
 }
@@ -191,69 +195,7 @@ async function analyzeUrl() {
     }
 }
 
-async function fetchLatestNews() {
-    const fetchBtn = document.getElementById('fetch-news-btn');
-    const originalText = fetchBtn.textContent;
-    
-    try {
-        fetchBtn.textContent = '📡 Fetching...';
-        fetchBtn.disabled = true;
-        
-        console.log('📰 Fetching latest news...');
-        
-        const response = await fetch('/fetch-news', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                country: 'us',
-                category: 'general',
-                page_size: 5
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('✅ News fetched:', data);
-        
-        displayLatestNews(data.articles || []);
-        
-    } catch (error) {
-        console.error('❌ Error fetching news:', error);
-        showError('Failed to fetch latest news. Please try again.');
-    } finally {
-        fetchBtn.textContent = originalText;
-        fetchBtn.disabled = false;
-    }
-}
 
-function displayLatestNews(articles) {
-    if (!articles || articles.length === 0) {
-        showError('No news articles found.');
-        return;
-    }
-    
-    // Display first article in textarea
-    const firstArticle = articles[0];
-    const textarea = document.getElementById('news-text');
-    
-    let newsText = firstArticle.title || '';
-    if (firstArticle.description) {
-        newsText += '\n\n' + firstArticle.description;
-    }
-    if (firstArticle.content) {
-        newsText += '\n\n' + firstArticle.content;
-    }
-    
-    textarea.value = newsText;
-    
-    // Show success message
-    showSuccess(`Fetched ${articles.length} news articles. First article loaded for analysis.`);
-}
 
 function updateUI(result) {
     console.log('🎨 Updating UI with result:', result);
@@ -392,8 +334,10 @@ function updateExplanation(result) {
         `;
     }
     
-    // Add ML explanation (formatted)
+    // Add ML explanation (formatted) - This is the main fix
     if (result.explanation) {
+        console.log('🤖 AI Explanation found:', result.explanation);
+        
         // Format the explanation with proper line breaks and styling
         const formattedExplanation = result.explanation
             .replace(/\n/g, '<br>')
@@ -405,13 +349,17 @@ function updateExplanation(result) {
             .replace(/📅/g, '<span class="text-indigo-600 dark:text-indigo-400">📅</span>')
             .replace(/🎯/g, '<span class="text-pink-600 dark:text-pink-400">🎯</span>')
             .replace(/🔗/g, '<span class="text-cyan-600 dark:text-cyan-400">🔗</span>')
-            .replace(/📚/g, '<span class="text-orange-600 dark:text-orange-400">📚</span>');
+            .replace(/📚/g, '<span class="text-orange-600 dark:text-orange-400">📚</span>')
+            .replace(/🤖/g, '<span class="text-blue-600 dark:text-blue-400">🤖</span>')
+            .replace(/📊/g, '<span class="text-purple-600 dark:text-purple-400">📊</span>');
         
         html += '<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">';
         html += '<h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🤖 AI Analysis Result:</h5>';
         html += `<div class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">${formattedExplanation}</div>`;
         html += '</div>';
     } else {
+        console.log('⚠️ No AI explanation found in result:', result);
+        
         // Fallback explanation
         const prediction = result.prediction;
         const confidence = Math.round(result.confidence);

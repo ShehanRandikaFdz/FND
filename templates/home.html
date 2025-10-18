@@ -142,9 +142,10 @@
                         </p>
                     </div>
 
-                    <div id="feedback-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div id="feedback-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                         <!-- User feedback will be loaded here -->
                     </div>
+
                 </div>
             </section>
 
@@ -256,6 +257,16 @@
         let newsInterval;
         let autoRefreshInterval;
 
+        // Utility function to shuffle array
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
         // Load news data
         async function loadNews() {
             try {
@@ -273,6 +284,9 @@
                     console.log('Loaded news articles:', newsData.length);
                     
                     if (newsData.length > 0) {
+                        // Shuffle the news data to ensure variety
+                        newsData = shuffleArray(newsData);
+                        console.log(`News shuffled for variety: ${newsData.length} articles`);
                         displayNews();
                         startNewsRotation();
                     } else {
@@ -352,6 +366,11 @@
         function startNewsRotation() {
             if (newsData.length <= 1) return;
             
+            // Clear any existing interval
+            if (newsInterval) {
+                clearInterval(newsInterval);
+            }
+            
             newsInterval = setInterval(() => {
                 currentNewsIndex = (currentNewsIndex + 1) % newsData.length;
                 updateNewsDisplay();
@@ -363,7 +382,15 @@
             const container = document.getElementById('news-container');
             const indicators = document.querySelectorAll('#news-indicators button');
             
-            if (!container) return;
+            if (!container || newsData.length === 0) return;
+
+            // Ensure we don't go out of bounds
+            if (currentNewsIndex >= newsData.length) {
+                currentNewsIndex = 0;
+            }
+            if (currentNewsIndex < 0) {
+                currentNewsIndex = newsData.length - 1;
+            }
 
             container.style.transform = `translateX(-${currentNewsIndex * 100}%)`;
             
@@ -395,6 +422,12 @@
                 console.error('Error loading feedback:', error);
                 displayFeedback([]);
             }
+        }
+
+        // Refresh feedback display (called after new feedback submission)
+        async function refreshFeedback() {
+            console.log('Refreshing feedback display...');
+            await loadFeedback();
         }
 
         // Display user feedback
@@ -457,11 +490,12 @@
                         const newNewsData = data.articles || [];
                         
                         if (newNewsData.length > 0) {
-                            // Only update if we got new data
-                            newsData = newNewsData;
+                            // Always shuffle the news data to ensure variety
+                            newsData = shuffleArray(newNewsData);
                             currentNewsIndex = 0; // Reset to first news item
                             displayNews();
-                            console.log(`Auto-refresh: Loaded ${newsData.length} new articles`);
+                            startNewsRotation(); // Restart rotation with new data
+                            console.log(`Auto-refresh: Loaded ${newsData.length} new articles (shuffled for variety)`);
                         } else {
                             console.log('Auto-refresh: No new articles found');
                         }
@@ -481,6 +515,7 @@
                 autoRefreshInterval = null;
             }
         }
+
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
@@ -509,6 +544,7 @@
                     updateNewsDisplay();
                 });
             }
+
         });
 
         // Clean up intervals when page is unloaded

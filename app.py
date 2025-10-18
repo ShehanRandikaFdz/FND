@@ -530,12 +530,17 @@ def get_feedback():
         except FileNotFoundError:
             feedback_data = []
         
-        # Filter approved feedback
+        # Filter approved feedback and sort by submission date (newest first)
         approved_feedback = [item for item in feedback_data if item.get('status') == 'approved']
+        
+        # Sort by submission date (newest first) and get latest 3
+        approved_feedback.sort(key=lambda x: x.get('submitted_at', ''), reverse=True)
+        latest_feedback = approved_feedback[:3]
         
         return jsonify({
             'success': True,
-            'feedback': approved_feedback
+            'feedback': latest_feedback,
+            'total_approved': len(approved_feedback)
         })
     except Exception as e:
         return jsonify({
@@ -570,7 +575,7 @@ def submit_feedback():
             'email': email,
             'feedback': feedback_text,
             'rating': int(rating),
-            'status': 'pending',  # New feedback needs approval
+            'status': 'approved',  # Auto-approve for demo purposes
             'submitted_at': datetime.now().isoformat(),
             'user_plan': 'free'  # Default for feedback submissions
         }
@@ -592,7 +597,7 @@ def submit_feedback():
         
         return jsonify({
             'success': True,
-            'message': 'Thank you for your feedback! It will be reviewed and may appear on our home page.',
+            'message': 'Thank you for your feedback! It will appear on our home page immediately.',
             'feedback_id': feedback_entry['id']
         })
         
@@ -608,17 +613,37 @@ def generate_explanation(ml_result, news_api_results):
     prediction = ml_result.get('final_prediction', 'UNKNOWN')
     confidence = ml_result.get('confidence', 0)
     
+    # Start with ML analysis explanation
+    explanation_parts = []
+    
+    # Add ML prediction explanation
+    if prediction == 'FAKE':
+        explanation_parts.append(f"🤖 AI ANALYSIS: High probability of misinformation detected (confidence: {confidence:.1f}%)")
+        explanation_parts.append("The text contains patterns commonly found in fabricated or satirical content.")
+    elif prediction == 'TRUE':
+        explanation_parts.append(f"🤖 AI ANALYSIS: High probability of credible content (confidence: {confidence:.1f}%)")
+        explanation_parts.append("The text patterns are consistent with factual reporting.")
+    else:
+        explanation_parts.append(f"🤖 AI ANALYSIS: Inconclusive result (confidence: {confidence:.1f}%)")
+        explanation_parts.append("Additional verification may be needed.")
+    
+    # Add individual model results if available
+    individual_results = ml_result.get('individual_results', {})
+    if individual_results:
+        explanation_parts.append("\n📊 INDIVIDUAL MODEL RESULTS:")
+        for model_name, result in individual_results.items():
+            if isinstance(result, dict) and 'prediction' in result:
+                model_pred = result.get('prediction', 'UNKNOWN')
+                model_conf = result.get('confidence', 0)
+                explanation_parts.append(f"• {model_name}: {model_pred} ({model_conf:.1f}%)")
+    
     # Check if NewsAPI found matching articles
     if news_api_results.get('found_online') and news_api_results.get('articles'):
         articles = news_api_results.get('articles', [])
         best_match = news_api_results.get('best_match', {})
         similarity = best_match.get('similarity_score', 0)
         
-        # Create detailed explanation with found articles
-        explanation_parts = []
-        
-        # Main verification result
-        explanation_parts.append(f"ONLINE VERIFICATION: Found {len(articles)} similar article(s) from trusted sources.")
+        explanation_parts.append(f"\n✅ ONLINE VERIFICATION: Found {len(articles)} similar article(s) from trusted sources.")
         
         # Best match details
         if best_match:
@@ -627,29 +652,29 @@ def generate_explanation(ml_result, news_api_results):
             published_at = best_match.get('publishedAt', 'Unknown Date')
             url = best_match.get('url', '#')
             
-            explanation_parts.append(f"BEST MATCH: '{title}'")
-            explanation_parts.append(f"SOURCE: {source}")
-            explanation_parts.append(f"PUBLISHED: {published_at}")
-            explanation_parts.append(f"SIMILARITY: {similarity:.1%}")
-            explanation_parts.append(f"READ MORE: {url}")
+            explanation_parts.append(f"📰 BEST MATCH: '{title}'")
+            explanation_parts.append(f"🏢 SOURCE: {source}")
+            explanation_parts.append(f"📅 PUBLISHED: {published_at}")
+            explanation_parts.append(f"🎯 SIMILARITY: {similarity:.1%}")
+            explanation_parts.append(f"🔗 READ MORE: {url}")
         
         # Additional articles if any
         if len(articles) > 1:
-            explanation_parts.append(f"\nOTHER MATCHES ({len(articles)-1} more):")
+            explanation_parts.append(f"\n📚 OTHER MATCHES ({len(articles)-1} more):")
             for i, article in enumerate(articles[1:3], 1):  # Show up to 2 additional articles
                 article_title = article.get('title', 'Unknown Title')
                 article_source = article.get('source', {}).get('name', 'Unknown Source')
                 article_url = article.get('url', '#')
                 explanation_parts.append(f"{i}. {article_title} ({article_source}) - {article_url}")
-        
-        return "\n".join(explanation_parts)
     
     else:
         # No online verification available
         if news_api_results.get('error'):
-            return f"ONLINE VERIFICATION: Unable to verify online - {news_api_results['error']}"
+            explanation_parts.append(f"\n⚠️ ONLINE VERIFICATION: Unable to verify online - {news_api_results['error']}")
         else:
-            return "ONLINE VERIFICATION: No matching articles found in trusted online sources for verification."
+            explanation_parts.append("\n⚠️ ONLINE VERIFICATION: No matching articles found in trusted online sources for verification.")
+    
+    return "\n".join(explanation_parts)
 
 # Initialize the application
 if __name__ == '__main__':

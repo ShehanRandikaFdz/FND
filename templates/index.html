@@ -238,11 +238,8 @@
                     <div class="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
                         <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Text Analysis</h3>
                         <textarea id="news-text" class="w-full h-48 p-4 rounded-lg bg-background-light dark:bg-background-dark border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Paste the article text here..."></textarea>
-                        <div class="flex flex-col sm:flex-row gap-4 mt-4">
-                            <button id="fetch-news-btn" class="w-full flex-1 py-3 px-6 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors">
-                                📰 Fetch Latest News
-                            </button>
-                            <button id="check-credibility-btn" class="w-full flex-1 py-3 px-6 rounded-lg bg-primary text-background-dark font-bold hover:bg-primary/80 transition-colors">
+                        <div class="flex justify-center mt-4">
+                            <button id="check-credibility-btn" class="w-full py-3 px-6 rounded-lg bg-primary text-background-dark font-bold hover:bg-primary/80 transition-colors">
                                 🔍 Analyze Text
                             </button>
                         </div>
@@ -498,6 +495,18 @@
                         
                         
                         <div>
+                            <label for="rating" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rating</label>
+                            <select id="rating" name="rating" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" required>
+                                <option value="">Select a rating</option>
+                                <option value="5">⭐⭐⭐⭐⭐ Excellent (5)</option>
+                                <option value="4">⭐⭐⭐⭐ Good (4)</option>
+                                <option value="3">⭐⭐⭐ Average (3)</option>
+                                <option value="2">⭐⭐ Poor (2)</option>
+                                <option value="1">⭐ Very Poor (1)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
                             <label for="feedback" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Feedback</label>
                             <textarea id="feedback" name="feedback" rows="4" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white" placeholder="Tell us about your experience with our fake news detection platform..."></textarea>
                         </div>
@@ -524,14 +533,16 @@
     </div>
 
     <script>
-        // Dark mode toggle
-        const darkModeToggle = document.getElementById('dark-mode-toggle');
-        const html = document.documentElement;
-        
-        darkModeToggle.addEventListener('click', () => {
-            html.classList.toggle('dark');
-            const isDark = html.classList.contains('dark');
-            darkModeToggle.textContent = isDark ? '☀️' : '🌙';
+        // Dark mode toggle is handled by main.js
+        // Ensure dark mode is properly initialized
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force dark mode initialization
+            const savedMode = localStorage.getItem('darkMode');
+            if (savedMode === 'true') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         });
 
         // Smooth scrolling for anchor links
@@ -571,12 +582,13 @@
                 const feedbackData = {
                     name: formData.get('name'),
                     email: formData.get('email'),
-                    feedback: formData.get('feedback')
+                    feedback: formData.get('feedback'),
+                    rating: parseInt(formData.get('rating'))
                 };
 
                 // Basic validation
-                if (!feedbackData.name || !feedbackData.email || !feedbackData.feedback) {
-                    alert('Please fill in all fields.');
+                if (!feedbackData.name || !feedbackData.email || !feedbackData.feedback || !feedbackData.rating) {
+                    alert('Please fill in all fields including rating.');
                     return;
                 }
 
