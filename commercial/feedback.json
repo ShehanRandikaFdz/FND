@@ -1,0 +1,42 @@
+[
+  {
+    "id": "feedback_1760630612",
+    "name": "Shehan Fernando",
+    "email": "shehanrandikafernando@gmail.com",
+    "feedback": "Trusted AI",
+    "rating": 5,
+    "status": "approved",
+    "submitted_at": "2025-10-16T21:33:32.841445",
+    "user_plan": "free"
+  },
+  {
+    "id": "feedback_1760630633",
+    "name": "Shehan Fernando",
+    "email": "shehanrandikafernando@gmail.com",
+    "feedback": "Trusted AI",
+    "rating": 5,
+    "status": "pending",
+    "submitted_at": "2025-10-16T21:33:53.493513",
+    "user_plan": "free"
+  },
+  {
+    "id": "feedback_1760631460",
+    "name": "Shehan Fernando",
+    "email": "shehanrandikafernando@gmail.com",
+    "feedback": "Trusted AI",
+    "rating": 5,
+    "status": "pending",
+    "submitted_at": "2025-10-16T21:47:40.261697",
+    "user_plan": "free"
+  },
+  {
+    "id": "feedback_1760789703",
+    "name": "Shehan Fernando",
+    "email": "shehanrandikafernando@gmail.com",
+    "feedback": "Superb",
+    "rating": 4,
+    "status": "approved",
+    "submitted_at": "2025-10-18T17:45:03.011585",
+    "user_plan": "free"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "test@example.com": {
+    "name": "Test User",
+    "password": "password123",
+    "plan": "starter",
+    "created_at": "2025-10-15T10:49:46.581776",
+    "is_active": true
+  },
+  "shashindhieravishka@gmail.com": {
+    "name": "shashindi",
+    "password": "Shashindi123",
+    "plan": "starter",
+    "created_at": "2025-10-15T12:54:38.823367",
+    "is_active": true
+  },
+  "newuser@example.com": {
+    "name": "New User",
+    "password": "test123",
+    "plan": "professional",
+    "created_at": "2025-10-15T14:34:57.402744",
+    "is_active": true
+  }
+}
