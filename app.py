@@ -414,12 +414,18 @@ def payment():
 @app.route('/login')
 def login_page():
     """Display login page"""
-    return render_template('commercial.html', page='login')
+    # If user is already logged in, redirect to home
+    if 'user_email' in session:
+        return redirect('/')
+    return render_template('login.html')
 
 @app.route('/register')
 def register_page():
     """Display registration page"""
-    return render_template('commercial.html', page='register')
+    # If user is already logged in, redirect to home
+    if 'user_email' in session:
+        return redirect('/')
+    return render_template('register.html')
 
 @app.route('/dashboard')
 def dashboard_page():
