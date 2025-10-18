@@ -284,24 +284,74 @@
                     <div class="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700" id="output-section">
                         <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Analysis Result</h3>
                         <div class="space-y-6">
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg font-semibold">Status:</span>
-                                <span id="status" class="px-4 py-2 rounded-full text-sm font-medium bg-gray-500/20 text-gray-500">⏳ Ready to analyze...</span>
-                            </div>
-                            <div>
-                                <span class="text-lg font-semibold">Confidence Score:</span>
-                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mt-2">
-                                    <div id="confidence-bar" class="bg-primary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <!-- Online Verification Section -->
+                            <div id="online-verification" class="hidden">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <span class="text-green-500 text-2xl">✅</span>
+                                    <h4 class="text-xl font-bold text-gray-900 dark:text-white">Online Verification Found</h4>
                                 </div>
-                                <p id="confidence" class="text-right text-sm text-gray-500 dark:text-gray-400 mt-1">0%</p>
+                                
+                                <!-- Best Match -->
+                                <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-xl border border-green-200 dark:border-green-800 mb-6">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <h5 class="text-lg font-bold text-gray-900 dark:text-white">Best Match</h5>
+                                        <span id="best-match-similarity" class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">75% Similar</span>
+                                    </div>
+                                    <h6 id="best-match-title" class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Article Title</h6>
+                                    <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <p><strong>Source:</strong> <span id="best-match-source">The Times of India</span></p>
+                                        <p><strong>Published:</strong> <span id="best-match-published">09/10/2025</span></p>
+                                        <p><strong>Link:</strong> <a id="best-match-url" href="#" target="_blank" class="text-primary hover:underline">Read Original Article →</a></p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Other Matches -->
+                                <div class="mb-6">
+                                    <h5 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Other Matches (<span id="other-matches-count">4</span> more)</h5>
+                                    <div id="other-matches-list" class="space-y-3">
+                                        <!-- Other matches will be populated here -->
+                                    </div>
+                                </div>
                             </div>
+                            
+                            <!-- AI Analysis Result -->
+                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                                <h5 class="text-lg font-bold text-gray-900 dark:text-white mb-4">AI Analysis Result</h5>
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-lg font-semibold">Status:</span>
+                                        <span id="status" class="px-4 py-2 rounded-full text-sm font-medium bg-gray-500/20 text-gray-500">⏳ Ready to analyze...</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-lg font-semibold">Confidence Score:</span>
+                                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mt-2">
+                                            <div id="confidence-bar" class="bg-primary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                        </div>
+                                        <p id="confidence" class="text-right text-sm text-gray-500 dark:text-gray-400 mt-1">0%</p>
+                                    </div>
+                                    <div id="ai-explanation" class="text-gray-600 dark:text-gray-400">
+                                        <p id="ai-analysis-text">AI ANALYSIS: High probability of credible content (confidence: 66.5%)</p>
+                                        <p id="ai-pattern-text">The text patterns are consistent with factual reporting.</p>
+                                    </div>
+                                    <div id="individual-results" class="hidden">
+                                        <h6 class="font-semibold mb-2">INDIVIDUAL MODEL RESULTS:</h6>
+                                        <div id="model-results-list" class="space-y-1 text-sm">
+                                            <!-- Individual model results will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Source Information -->
                             <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
                                 <p><strong class="font-semibold">Source:</strong> <span id="source">-</span></p>
                                 <p><strong class="font-semibold">Published:</strong> <span id="published">-</span></p>
                                 <p><strong class="font-semibold">URL:</strong> <a id="url" class="text-primary hover:underline" href="#" target="_blank">-</a></p>
                             </div>
+                            
+                            <!-- Detailed Explanation -->
                             <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-                                <h4 class="text-lg font-semibold mb-2">AI Explanation</h4>
+                                <h4 class="text-lg font-semibold mb-2">Detailed Explanation</h4>
                                 <div id="explanation-content" class="text-gray-600 dark:text-gray-400">
                                     <p>Enter text above and click "Analyze Text" to get AI-powered fake news detection results.</p>
                                 </div>

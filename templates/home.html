@@ -255,10 +255,12 @@
             return shuffled;
         }
 
+
         // Load news data
         async function loadNews() {
             try {
                 console.log('Loading news from NewsAPI...');
+                
                 const response = await fetch('/fetch-news', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -302,70 +304,100 @@
                     description: "Advanced machine learning algorithms are transforming how we verify news authenticity in the digital age.",
                     url: "#",
                     source: { name: "Tech News" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.95,
+                    prediction: 'TRUE',
+                    confidence: 95
                 },
                 {
                     title: "Global Initiative Launches to Combat Misinformation",
                     description: "International organizations join forces to develop new tools and strategies for detecting fake news.",
                     url: "#",
                     source: { name: "Global News" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.88,
+                    prediction: 'TRUE',
+                    confidence: 88
                 },
                 {
                     title: "Digital Literacy Programs Show Promising Results",
                     description: "Educational initiatives teaching media literacy skills are helping users identify reliable sources.",
                     url: "#",
                     source: { name: "Education Today" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.92,
+                    prediction: 'TRUE',
+                    confidence: 92
                 },
                 {
                     title: "Social Media Platforms Implement New Verification Tools",
                     description: "Major platforms introduce AI-powered systems to flag potentially misleading content.",
                     url: "#",
                     source: { name: "Social Media News" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.85,
+                    prediction: 'TRUE',
+                    confidence: 85
                 },
                 {
                     title: "Researchers Develop New Methods for Source Verification",
                     description: "Academic institutions create innovative approaches to verify news sources and credibility.",
                     url: "#",
                     source: { name: "Research Weekly" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.90,
+                    prediction: 'TRUE',
+                    confidence: 90
                 },
                 {
                     title: "Journalism Standards Evolve in Digital Era",
                     description: "News organizations adapt their practices to maintain credibility in an age of rapid information sharing.",
                     url: "#",
                     source: { name: "Journalism Today" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.87,
+                    prediction: 'TRUE',
+                    confidence: 87
                 },
                 {
                     title: "Public Awareness Campaigns Target Misinformation",
                     description: "Government and NGO initiatives educate citizens about identifying and avoiding fake news.",
                     url: "#",
                     source: { name: "Public Affairs" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.83,
+                    prediction: 'TRUE',
+                    confidence: 83
                 },
                 {
                     title: "Technology Companies Invest in Trust and Safety",
                     description: "Major tech firms allocate significant resources to combat misinformation on their platforms.",
                     url: "#",
                     source: { name: "Tech Industry" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.89,
+                    prediction: 'TRUE',
+                    confidence: 89
                 },
                 {
                     title: "Cross-Platform Collaboration Fights Disinformation",
                     description: "Different organizations work together to share intelligence and coordinate responses to fake news.",
                     url: "#",
                     source: { name: "Collaboration News" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.86,
+                    prediction: 'TRUE',
+                    confidence: 86
                 },
                 {
                     title: "Future of News Verification Looks Bright",
                     description: "Emerging technologies promise even more sophisticated tools for maintaining information integrity.",
                     url: "#",
                     source: { name: "Future News" },
-                    publishedAt: new Date().toISOString()
+                    publishedAt: new Date().toISOString(),
+                    credibility_score: 0.91,
+                    prediction: 'TRUE',
+                    confidence: 91
                 }
             ];
             
@@ -395,22 +427,56 @@
                 // Create news banner
                 const banner = document.createElement('div');
                 banner.className = 'w-full flex-shrink-0 relative';
+                
+                // Determine credibility color and icon
+                const credibilityScore = news.credibility_score || 0;
+                let credibilityColor = 'text-red-400';
+                let credibilityIcon = '⚠️';
+                let credibilityText = 'Suspicious';
+                
+                if (credibilityScore >= 0.8) {
+                    credibilityColor = 'text-green-400';
+                    credibilityIcon = '✅';
+                    credibilityText = 'Highly Credible';
+                } else if (credibilityScore >= 0.6) {
+                    credibilityColor = 'text-yellow-400';
+                    credibilityIcon = '⚡';
+                    credibilityText = 'Moderately Credible';
+                } else if (credibilityScore >= 0.4) {
+                    credibilityColor = 'text-orange-400';
+                    credibilityIcon = '⚠️';
+                    credibilityText = 'Questionable';
+                } else {
+                    credibilityColor = 'text-red-400';
+                    credibilityIcon = '❌';
+                    credibilityText = 'Likely Fake';
+                }
+                
                 banner.innerHTML = `
                     <div class="relative h-64 md:h-80 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl overflow-hidden">
                         <div class="absolute inset-0 bg-gradient-to-br from-black/50 to-transparent"></div>
                         <div class="relative z-10 p-8 h-full flex flex-col justify-end">
-                            <div class="text-sm text-white/80 mb-2">${news.source?.name || 'News Source'}</div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="text-sm text-white/80">${news.source?.name || news.source || 'News Source'}</div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm ${credibilityColor}">${credibilityIcon}</span>
+                                    <span class="text-xs text-white/70">${credibilityText}</span>
+                                </div>
+                            </div>
                             <h3 class="text-2xl md:text-3xl font-bold text-white mb-4 line-clamp-2">${news.title}</h3>
                             <p class="text-white/90 mb-4 line-clamp-2">${news.description}</p>
-                            <a href="${news.url}" target="_blank" class="inline-flex items-center text-white hover:text-primary transition-colors">
-                                Read More <span class="ml-2">→</span>
-                            </a>
+                            <div class="flex items-center justify-between">
+                                <a href="${news.url}" target="_blank" class="inline-flex items-center text-white hover:text-primary transition-colors">
+                                    Read More <span class="ml-2">→</span>
+                                </a>
+                                <div class="text-xs text-white/60">
+                                    ${news.published_at ? new Date(news.published_at).toLocaleDateString() : 'Recent'}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
                 container.appendChild(banner);
-
-                // Indicators removed as requested
             });
         }
 

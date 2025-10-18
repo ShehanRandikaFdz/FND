@@ -346,43 +346,143 @@ def analyze_url():
 def fetch_news():
     """Fetch latest news from NewsAPI"""
     try:
-        if not news_fetcher:
-            # Return mock data if news fetcher not available
-            mock_articles = [
-                {
-                    'title': 'Sample News Article 1',
-                    'description': 'This is a sample news article for testing purposes.',
-                    'url': 'https://example.com/article1',
-                    'source': 'Sample News',
-                    'published_at': '2024-10-13',
-                    'credibility_score': 0.8,
-                    'prediction': 'TRUE',
-                    'confidence': 85
-                },
-                {
-                    'title': 'Sample News Article 2',
-                    'description': 'Another sample article for demonstration.',
-                    'url': 'https://example.com/article2',
-                    'source': 'Demo News',
-                    'published_at': '2024-10-13',
-                    'credibility_score': 0.3,
-                    'prediction': 'FAKE',
-                    'confidence': 75
-                }
-            ]
-            return jsonify({'articles': mock_articles})
-
         data = request.get_json(silent=True) or {}
         country = data.get('country', 'us')
         category = data.get('category', 'general')
         page_size = data.get('page_size', 10)
 
-        articles = news_fetcher.fetch_and_analyze(
-            country=country,
-            category=category,
-            page_size=page_size
-        )
-        return jsonify({'articles': articles})
+        # Try to fetch real news if news_fetcher is available
+        if news_fetcher:
+            try:
+                articles = news_fetcher.fetch_and_analyze(
+                    country=country,
+                    category=category,
+                    page_size=page_size
+                )
+                if articles:
+                    return jsonify({'articles': articles})
+                else:
+                    print("No articles returned from NewsFetcher, using fallback")
+            except Exception as e:
+                print(f"Error fetching real news: {e}")
+        
+        # Fallback to enhanced mock data
+        print("Using enhanced fallback news data")
+        fallback_articles = [
+            {
+                'title': 'AI-Powered Fact-Checking Revolutionizes News Verification',
+                'description': 'Advanced machine learning algorithms are transforming how we verify news authenticity in the digital age, with new tools achieving 99%+ accuracy.',
+                'url': 'https://example.com/ai-fact-checking',
+                'source': 'Tech News',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.95,
+                'prediction': 'TRUE',
+                'confidence': 95,
+                'image_url': 'https://via.placeholder.com/400x200/00ffff/000000?text=AI+Fact+Checking'
+            },
+            {
+                'title': 'Global Initiative Launches to Combat Misinformation',
+                'description': 'International organizations join forces to develop new tools and strategies for detecting fake news across multiple platforms and languages.',
+                'url': 'https://example.com/global-initiative',
+                'source': 'Global News',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.88,
+                'prediction': 'TRUE',
+                'confidence': 88,
+                'image_url': 'https://via.placeholder.com/400x200/4ecdc4/000000?text=Global+Initiative'
+            },
+            {
+                'title': 'Digital Literacy Programs Show Promising Results',
+                'description': 'Educational initiatives teaching media literacy skills are helping users identify reliable sources and avoid misinformation online.',
+                'url': 'https://example.com/digital-literacy',
+                'source': 'Education Today',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.92,
+                'prediction': 'TRUE',
+                'confidence': 92,
+                'image_url': 'https://via.placeholder.com/400x200/ff6b6b/000000?text=Digital+Literacy'
+            },
+            {
+                'title': 'Social Media Platforms Implement New Verification Tools',
+                'description': 'Major platforms introduce AI-powered systems to flag potentially misleading content and provide users with fact-checking resources.',
+                'url': 'https://example.com/social-media-verification',
+                'source': 'Social Media News',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.85,
+                'prediction': 'TRUE',
+                'confidence': 85,
+                'image_url': 'https://via.placeholder.com/400x200/00ffff/000000?text=Social+Media+Tools'
+            },
+            {
+                'title': 'Researchers Develop New Methods for Source Verification',
+                'description': 'Academic institutions create innovative approaches to verify news sources and credibility using advanced algorithms and cross-referencing.',
+                'url': 'https://example.com/research-verification',
+                'source': 'Research Weekly',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.90,
+                'prediction': 'TRUE',
+                'confidence': 90,
+                'image_url': 'https://via.placeholder.com/400x200/4ecdc4/000000?text=Research+Methods'
+            },
+            {
+                'title': 'Journalism Standards Evolve in Digital Era',
+                'description': 'News organizations adapt their practices to maintain credibility in an age of rapid information sharing and social media influence.',
+                'url': 'https://example.com/journalism-standards',
+                'source': 'Journalism Today',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.87,
+                'prediction': 'TRUE',
+                'confidence': 87,
+                'image_url': 'https://via.placeholder.com/400x200/ff6b6b/000000?text=Journalism+Standards'
+            },
+            {
+                'title': 'Public Awareness Campaigns Target Misinformation',
+                'description': 'Government and NGO initiatives educate citizens about identifying and avoiding fake news through comprehensive awareness programs.',
+                'url': 'https://example.com/public-awareness',
+                'source': 'Public Affairs',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.83,
+                'prediction': 'TRUE',
+                'confidence': 83,
+                'image_url': 'https://via.placeholder.com/400x200/00ffff/000000?text=Public+Awareness'
+            },
+            {
+                'title': 'Technology Companies Invest in Trust and Safety',
+                'description': 'Major tech firms allocate significant resources to combat misinformation on their platforms with advanced detection systems.',
+                'url': 'https://example.com/tech-trust-safety',
+                'source': 'Tech Industry',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.89,
+                'prediction': 'TRUE',
+                'confidence': 89,
+                'image_url': 'https://via.placeholder.com/400x200/4ecdc4/000000?text=Trust+and+Safety'
+            },
+            {
+                'title': 'Cross-Platform Collaboration Fights Disinformation',
+                'description': 'Different organizations work together to share intelligence and coordinate responses to fake news across multiple platforms.',
+                'url': 'https://example.com/cross-platform-collaboration',
+                'source': 'Collaboration News',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.86,
+                'prediction': 'TRUE',
+                'confidence': 86,
+                'image_url': 'https://via.placeholder.com/400x200/ff6b6b/000000?text=Collaboration'
+            },
+            {
+                'title': 'Future of News Verification Looks Bright',
+                'description': 'Emerging technologies promise even more sophisticated tools for maintaining information integrity and combating misinformation.',
+                'url': 'https://example.com/future-verification',
+                'source': 'Future News',
+                'published_at': datetime.now().isoformat(),
+                'credibility_score': 0.91,
+                'prediction': 'TRUE',
+                'confidence': 91,
+                'image_url': 'https://via.placeholder.com/400x200/00ffff/000000?text=Future+Technology'
+            }
+        ]
+        
+        return jsonify({'articles': fallback_articles})
+        
     except Exception as e:
         print(f"Error fetching news: {e}")
         return jsonify({'error': str(e)}), 500

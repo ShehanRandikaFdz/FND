@@ -206,8 +206,11 @@ function updateUI(result) {
     // Update confidence score
     updateConfidence(result.confidence);
     
-    // Update explanation
-    updateExplanation(result);
+    // Update online verification section
+    updateOnlineVerification(result);
+    
+    // Update AI analysis result
+    updateAIAnalysis(result);
     
     // Update source info (if available)
     updateSourceInfo(result);
@@ -216,6 +219,11 @@ function updateUI(result) {
     if (result.url) {
         updateUrlInfo(result);
     }
+    
+    // Update detailed explanation
+    updateDetailedExplanation(result);
+    
+    console.log('✅ UI update complete');
 }
 
 function updateStatus(prediction, confidence) {
@@ -255,77 +263,128 @@ function updateConfidence(confidence) {
     }
 }
 
-function updateExplanation(result) {
+function updateOnlineVerification(result) {
+    const onlineVerificationEl = document.getElementById('online-verification');
+    if (!onlineVerificationEl) {
+        console.log('❌ Online verification element not found');
+        return;
+    }
+    
+    // Check if NewsAPI found articles - use the correct structure
+    if (result.news_api_results && result.news_api_results.found_online && result.news_api_results.all_matches) {
+        const articles = result.news_api_results.all_matches;
+        const bestMatch = result.news_api_results.best_match;
+        
+        // Show the online verification section
+        onlineVerificationEl.classList.remove('hidden');
+        
+        // Update best match
+        if (bestMatch) {
+            const similarity = Math.round((bestMatch.similarity_score || 0) * 100);
+            const publishedDate = bestMatch.publishedAt ? new Date(bestMatch.publishedAt).toLocaleDateString() : 'Unknown Date';
+            
+            const similarityEl = document.getElementById('best-match-similarity');
+            const titleEl = document.getElementById('best-match-title');
+            const sourceEl = document.getElementById('best-match-source');
+            const publishedEl = document.getElementById('best-match-published');
+            const urlEl = document.getElementById('best-match-url');
+            
+            if (similarityEl) similarityEl.textContent = `${similarity}% Similar`;
+            if (titleEl) titleEl.textContent = bestMatch.title || 'Unknown Title';
+            if (sourceEl) sourceEl.textContent = bestMatch.source?.name || 'Unknown Source';
+            if (publishedEl) publishedEl.textContent = publishedDate;
+            
+            if (urlEl && bestMatch.url) {
+                urlEl.href = bestMatch.url;
+                urlEl.textContent = 'Read Original Article →';
+            }
+        }
+        
+        // Update other matches
+        const otherMatchesCount = Math.max(0, articles.length - 1);
+        const countEl = document.getElementById('other-matches-count');
+        if (countEl) countEl.textContent = otherMatchesCount;
+        
+        const otherMatchesList = document.getElementById('other-matches-list');
+        if (otherMatchesList && articles.length > 1) {
+            let html = '';
+            articles.slice(1, 5).forEach((article, index) => {
+                const similarity = Math.round((article.similarity_score || 0) * 100);
+                html += `
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                        <div class="flex justify-between items-start mb-2">
+                            <h6 class="font-semibold text-gray-800 dark:text-gray-200 text-sm leading-tight">${article.title || 'Unknown Title'}</h6>
+                            <span class="bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium ml-2">${similarity}% similar</span>
+                        </div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">${article.source?.name || 'Unknown Source'}</span>
+                            ${article.url ? `<span class="mx-2">•</span><a href="${article.url}" target="_blank" class="text-primary hover:underline">Read →</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            otherMatchesList.innerHTML = html;
+        }
+    } else {
+        // Hide the online verification section
+        onlineVerificationEl.classList.add('hidden');
+    }
+}
+
+function updateAIAnalysis(result) {
+    const aiAnalysisText = document.getElementById('ai-analysis-text');
+    const aiPatternText = document.getElementById('ai-pattern-text');
+    const individualResults = document.getElementById('individual-results');
+    const modelResultsList = document.getElementById('model-results-list');
+    
+    if (!aiAnalysisText || !aiPatternText) {
+        console.log('❌ AI analysis elements not found');
+        return;
+    }
+    
+    const prediction = result.prediction;
+    const confidence = Math.round(result.confidence);
+    
+    // Update AI analysis text
+    if (prediction === 'FAKE') {
+        aiAnalysisText.textContent = `AI ANALYSIS: High probability of misinformation detected (confidence: ${confidence}%)`;
+        aiPatternText.textContent = 'The text contains patterns commonly found in fabricated or satirical content.';
+    } else if (prediction === 'TRUE') {
+        aiAnalysisText.textContent = `AI ANALYSIS: High probability of credible content (confidence: ${confidence}%)`;
+        aiPatternText.textContent = 'The text patterns are consistent with factual reporting.';
+    } else {
+        aiAnalysisText.textContent = `AI ANALYSIS: Inconclusive result (confidence: ${confidence}%)`;
+        aiPatternText.textContent = 'Additional verification may be needed.';
+    }
+    
+    // Update individual model results - handle the correct structure
+    if (result.individual_results && Object.keys(result.individual_results).length > 0) {
+        individualResults.classList.remove('hidden');
+        
+        let html = '';
+        Object.entries(result.individual_results).forEach(([modelName, modelResult]) => {
+            if (modelResult && typeof modelResult === 'object' && 'prediction' in modelResult) {
+                const modelPred = modelResult.prediction;
+                const modelConf = Math.round(modelResult.confidence || 0);
+                html += `<div>• ${modelName}: ${modelPred} (${modelConf}%)</div>`;
+            }
+        });
+        
+        if (modelResultsList) {
+            modelResultsList.innerHTML = html;
+        }
+    } else {
+        individualResults.classList.add('hidden');
+    }
+}
+
+function updateDetailedExplanation(result) {
     const explanationEl = document.getElementById('explanation-content');
     if (!explanationEl) return;
     
     let html = '';
     
-    // Check if NewsAPI found articles
-    if (result.news_api_results && result.news_api_results.found_online && result.news_api_results.all_matches) {
-        const articles = result.news_api_results.all_matches;
-        const bestMatch = result.news_api_results.best_match;
-        
-        html += '<div class="mb-6">';
-        html += '<div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">';
-        html += '<h4 class="font-semibold text-green-700 dark:text-green-300 mb-3 flex items-center">';
-        html += '<span class="mr-2">✅</span> Online Verification Found';
-        html += '</h4>';
-        
-        // Best match article
-        if (bestMatch) {
-            const similarity = Math.round((bestMatch.similarity_score || 0) * 100);
-            const publishedDate = bestMatch.publishedAt ? new Date(bestMatch.publishedAt).toLocaleDateString() : 'Unknown Date';
-            
-            html += '<div class="bg-white dark:bg-gray-800 rounded-lg p-4 mb-3 border border-green-200 dark:border-green-700">';
-            html += '<div class="flex items-start justify-between mb-2">';
-            html += '<h5 class="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-tight">📰 Best Match</h5>';
-            html += `<span class="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-xs font-medium">${similarity}% Similar</span>`;
-            html += '</div>';
-            html += `<p class="font-medium text-gray-800 dark:text-gray-200 mb-2">${bestMatch.title || 'Unknown Title'}</p>`;
-            html += '<div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">';
-            html += `<p><strong>🏢 Source:</strong> ${bestMatch.source?.name || 'Unknown Source'}</p>`;
-            html += `<p><strong>📅 Published:</strong> ${publishedDate}</p>`;
-            if (bestMatch.url) {
-                html += `<p><strong>🔗 Link:</strong> <a href="${bestMatch.url}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Read Original Article →</a></p>`;
-            }
-            html += '</div>';
-            html += '</div>';
-        }
-        
-        // Additional articles
-        if (articles.length > 1) {
-            html += '<div class="mt-3">';
-            html += `<h6 class="font-medium text-gray-700 dark:text-gray-300 mb-2">📚 Other Matches (${articles.length - 1} more):</h6>`;
-            html += '<div class="space-y-2">';
-            
-            articles.slice(1, 4).forEach((article, index) => {
-                const similarity = Math.round((article.similarity_score || 0) * 100);
-                html += `
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded p-3 border-l-4 border-blue-400">
-                        <p class="font-medium text-sm text-gray-800 dark:text-gray-200 mb-1">${article.title || 'Unknown Title'}</p>
-                        <div class="text-xs text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">${article.source?.name || 'Unknown Source'}</span>
-                            <span class="mx-2">•</span>
-                            <span>${similarity}% similar</span>
-                            ${article.url ? `<span class="mx-2">•</span><a href="${article.url}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Read →</a>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-            html += '</div>';
-        }
-        
-        html += '</div>';
-        html += '</div>';
-    } else {
-        // No online sources found - silently skip the warning
-        // Removed the warning message as requested
-    }
-    
-    // Add ML explanation (formatted) - This is the main fix
+    // Add ML explanation (formatted)
     if (result.explanation) {
         console.log('🤖 AI Explanation found:', result.explanation);
         
@@ -344,19 +403,13 @@ function updateExplanation(result) {
             .replace(/🤖/g, '<span class="text-blue-600 dark:text-blue-400">🤖</span>')
             .replace(/📊/g, '<span class="text-purple-600 dark:text-purple-400">📊</span>');
         
-        html += '<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">';
-        html += '<h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🤖 AI Analysis Result:</h5>';
         html += `<div class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">${formattedExplanation}</div>`;
-        html += '</div>';
     } else {
         console.log('⚠️ No AI explanation found in result:', result);
         
         // Fallback explanation
         const prediction = result.prediction;
         const confidence = Math.round(result.confidence);
-        
-        html += '<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">';
-        html += '<h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🤖 AI Analysis Result:</h5>';
         
         if (prediction === 'FAKE') {
             html += `<p class="text-sm text-red-600 dark:text-red-400">❌ High probability of misinformation (confidence: ${confidence}%). Patterns detected are commonly found in fabricated or satirical content.</p>`;
@@ -365,8 +418,6 @@ function updateExplanation(result) {
         } else {
             html += `<p class="text-sm text-yellow-600 dark:text-yellow-400">⚠️ Analysis is inconclusive (confidence: ${confidence}%). Additional verification may be needed.</p>`;
         }
-        
-        html += '</div>';
     }
     
     explanationEl.innerHTML = html;
