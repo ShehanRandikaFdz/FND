@@ -668,11 +668,10 @@ def generate_explanation(ml_result, news_api_results):
                 explanation_parts.append(f"{i}. {article_title} ({article_source}) - {article_url}")
     
     else:
-        # No online verification available
+        # No online verification available - silently skip the warning
         if news_api_results.get('error'):
             explanation_parts.append(f"\n⚠️ ONLINE VERIFICATION: Unable to verify online - {news_api_results['error']}")
-        else:
-            explanation_parts.append("\n⚠️ ONLINE VERIFICATION: No matching articles found in trusted online sources for verification.")
+        # Removed the "No matching articles found" warning message
     
     return "\n".join(explanation_parts)
 

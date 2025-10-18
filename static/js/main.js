@@ -321,17 +321,8 @@ function updateExplanation(result) {
         html += '</div>';
         html += '</div>';
     } else {
-        // Show warning if no online sources found
-        html += `
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
-                <div class="flex items-center">
-                    <span class="mr-2">⚠️</span>
-                    <p class="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
-                        No matching articles found in trusted online sources for verification.
-                    </p>
-                </div>
-            </div>
-        `;
+        // No online sources found - silently skip the warning
+        // Removed the warning message as requested
     }
     
     // Add ML explanation (formatted) - This is the main fix
