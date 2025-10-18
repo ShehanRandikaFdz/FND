@@ -75,31 +75,50 @@
                         
                         <!-- Enhanced Action Buttons -->
                         <div class="flex items-center space-x-4">
-                            <!-- Login/Register Links -->
-                            <a href="/login" class="text-gray-700 dark:text-gray-300 hover:text-primary font-semibold transition-colors duration-200">
-                                Login
-                            </a>
-                            <a href="/register" class="bg-primary text-background-dark px-4 py-2 rounded-lg font-semibold hover:bg-primary/80 transition-colors duration-200">
-                                Register
-                            </a>
+                            <!-- Auth Buttons (shown when not logged in) -->
+                            <div id="auth-buttons" class="flex items-center space-x-4">
+                                <a href="/login" class="text-gray-700 dark:text-gray-300 hover:text-primary font-semibold transition-colors duration-200">
+                                    Login
+                                </a>
+                                <a href="/register" class="bg-primary text-background-dark px-4 py-2 rounded-lg font-semibold hover:bg-primary/80 transition-colors duration-200">
+                                    Register
+                                </a>
+                            </div>
+                            
+                            <!-- User Menu (shown when logged in) -->
+                            <div id="user-menu" class="hidden flex items-center space-x-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center shadow-lg">
+                                        <span class="text-white font-bold text-sm" id="user-initial-nav">U</span>
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white" id="username-nav">User</h3>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400" id="user-plan-nav">Plan</p>
+                                    </div>
+                                </div>
+                                <button id="logout-btn-nav" class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-md">
+                                    Logout
+                                </button>
+                            </div>
+                            
                             <!-- Simple Dark Mode Toggle -->
                             <button id="dark-mode-toggle" class="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
                                 <span class="text-xl">🌙</span>
-                    </button>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </header>
         
-        <!-- Professional Profile Section - Home Page Only -->
-        <div id="profile-section" class="bg-gradient-to-r from-primary/10 via-accent/5 to-secondary/10 border-b border-primary/20 dark:border-gray-700/30 py-3 px-6">
+        <!-- Professional Profile Section - Home Page Only (shown when logged in) -->
+        <div id="profile-section" class="hidden bg-gradient-to-r from-primary/10 via-accent/5 to-secondary/10 border-b border-primary/20 dark:border-gray-700/30 py-3 px-6">
             <div class="container mx-auto">
                 <div class="flex items-center justify-end">
                     <div class="flex items-center space-x-4">
                         <div class="text-right">
                             <p class="text-sm text-gray-600 dark:text-gray-400">Usage this month</p>
-                            <p class="text-lg font-semibold text-primary" id="usage-stats">0 / 5,000 analyses</p>
+                            <p class="text-lg font-semibold text-primary" id="usage-stats">Loading...</p>
                         </div>
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center shadow-lg">
@@ -107,13 +126,10 @@
                             </div>
                             <div class="text-left">
                                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white" id="username">User</h3>
-                                <p class="text-xs text-gray-600 dark:text-gray-400" id="user-plan">Professional Plan</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400" id="user-plan">Plan</p>
                             </div>
                         </div>
-                        <button id="test-login-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-md">
-                            Test Login
-                        </button>
-                        <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-md">
+                        <button id="logout-btn" class="bg-secondary hover:bg-secondary/80 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-md">
                             Logout
                         </button>
                     </div>

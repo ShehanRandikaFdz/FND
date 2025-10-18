@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     console.log('🚀 Initializing Fake News Detector...');
     
+    // Check authentication state
+    updateAuthUI();
+    
     // Set up event listeners
     setupEventListeners();
     
@@ -34,7 +37,6 @@ function setupEventListeners() {
         checkBtn.addEventListener('click', checkCredibility);
     }
     
-    
     // Clear history button
     const clearBtn = document.getElementById('clear-history-btn');
     if (clearBtn) {
@@ -45,6 +47,17 @@ function setupEventListeners() {
     const analyzeUrlBtn = document.getElementById('analyze-url-btn');
     if (analyzeUrlBtn) {
         analyzeUrlBtn.addEventListener('click', analyzeUrl);
+    }
+    
+    // Logout buttons
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+    
+    const logoutBtnNav = document.getElementById('logout-btn-nav');
+    if (logoutBtnNav) {
+        logoutBtnNav.addEventListener('click', handleLogout);
     }
     
     // Enter key in textarea
@@ -562,6 +575,134 @@ function formatDate(dateString) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+/**
+ * Authentication Functions
+ */
+
+// Update UI based on authentication state
+function updateAuthUI() {
+    const user = getCurrentUser();
+    const authButtons = document.getElementById('auth-buttons');
+    const userMenu = document.getElementById('user-menu');
+    const profileSection = document.getElementById('profile-section');
+    
+    if (user) {
+        // User is logged in
+        if (authButtons) authButtons.classList.add('hidden');
+        if (userMenu) userMenu.classList.remove('hidden');
+        if (profileSection) profileSection.classList.remove('hidden');
+        
+        // Update user info in navigation
+        const userInitialNav = document.getElementById('user-initial-nav');
+        const usernameNav = document.getElementById('username-nav');
+        const userPlanNav = document.getElementById('user-plan-nav');
+        
+        if (userInitialNav && user.name) {
+            userInitialNav.textContent = user.name.charAt(0).toUpperCase();
+        }
+        if (usernameNav && user.name) {
+            usernameNav.textContent = user.name;
+        }
+        if (userPlanNav && user.plan) {
+            userPlanNav.textContent = formatPlanName(user.plan);
+        }
+        
+        // Update user info in profile section
+        const userInitial = document.getElementById('user-initial');
+        const username = document.getElementById('username');
+        const userPlan = document.getElementById('user-plan');
+        
+        if (userInitial && user.name) {
+            userInitial.textContent = user.name.charAt(0).toUpperCase();
+        }
+        if (username && user.name) {
+            username.textContent = user.name;
+        }
+        if (userPlan && user.plan) {
+            userPlan.textContent = formatPlanName(user.plan);
+        }
+        
+        // Load usage stats
+        loadUsageStats();
+    } else {
+        // User is not logged in
+        if (authButtons) authButtons.classList.remove('hidden');
+        if (userMenu) userMenu.classList.add('hidden');
+        if (profileSection) profileSection.classList.add('hidden');
+    }
+}
+
+// Get current user from localStorage
+function getCurrentUser() {
+    const email = localStorage.getItem('userEmail');
+    const name = localStorage.getItem('userName');
+    const plan = localStorage.getItem('userPlan');
+    
+    if (email && name && plan) {
+        return { email, name, plan };
+    }
+    return null;
+}
+
+// Format plan name for display
+function formatPlanName(plan) {
+    const planNames = {
+        'starter': 'Starter Plan',
+        'professional': 'Professional Plan',
+        'business': 'Business Plan',
+        'enterprise': 'Enterprise Plan'
+    };
+    return planNames[plan] || plan;
+}
+
+// Load usage statistics
+async function loadUsageStats() {
+    try {
+        const response = await fetch('/api/user/usage');
+        if (response.ok) {
+            const data = await response.json();
+            const usageStats = document.getElementById('usage-stats');
+            
+            if (usageStats && data.usage && data.plan) {
+                const used = data.usage.monthly_usage || 0;
+                const limit = data.plan.analyses_limit || 0;
+                
+                if (limit === -1) {
+                    usageStats.textContent = `${used} analyses (Unlimited)`;
+                } else {
+                    usageStats.textContent = `${used} / ${limit.toLocaleString()} analyses`;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading usage stats:', error);
+    }
+}
+
+// Handle logout
+async function handleLogout() {
+    try {
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            // Clear localStorage
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userPlan');
+            
+            // Reload page to update UI
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
 }
 
 function truncateText(text, maxLength = 100) {
